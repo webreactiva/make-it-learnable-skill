@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="make-it-learnable">
+  <title>make-it-learnable</title>
+  <rect width="512" height="512" rx="48" fill="#003049"/>
+  <defs><clipPath id="body"><rect x="48" y="64" width="416" height="400" rx="72"/></clipPath></defs>
+  <g clip-path="url(#body)">
+    <rect x="48" y="64" width="416" height="400" fill="#fdf0d5"/>
+    <rect x="48" y="64" width="90" height="400" fill="#780000"/>
+    <path d="M 360 88 L 440 88 L 440 168 Z" fill="#780000" stroke="#780000" stroke-width="42" stroke-linejoin="round"/>
+  </g>
+  <circle cx="246" cy="278" r="43" fill="#780000"/>
+  <circle cx="371" cy="278" r="43" fill="#780000"/>
+  <path d="M 278 360 Q 308 392 338 360" fill="none" stroke="#780000" stroke-width="22" stroke-linecap="round"/>
+</svg>

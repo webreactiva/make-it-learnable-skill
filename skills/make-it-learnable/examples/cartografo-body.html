@@ -1,0 +1,344 @@
+<div class="ml-shell">
+
+<header class="ml-hero">
+  <p class="ml-eyebrow">Cartógrafo · 12 min</p>
+  <h1>Cómo está construido Cartógrafo</h1>
+  <p class="ml-lede">Un juego de geografía en TypeScript y Vite, sin framework de UI.
+  1.700 líneas repartidas en nueve módulos. Al terminar deberías poder abrir el repo,
+  saber en qué fichero tocar y por qué el proyecto está partido así.</p>
+</header>
+
+<scroll-story>
+
+<l-section id="modulos" eyebrow="Arquitectura" title="Los nueve módulos y hacia dónde apuntan sus imports"
+           goal="Saber qué capa depende de cuál antes de abrir un fichero">
+  <p>El repositorio tiene tres capas y un fichero de arranque:</p>
+  <pre><code>src/
+  main.ts            arranque, estado vivo y cableado
+  ui/    screens.ts  components.ts  dom.ts
+  game/  questions.ts  state.ts  normalize.ts  scoring.ts  types.ts
+  data/  countries.json</code></pre>
+
+  <l-quiz mode="prediction" answer="a" confidence>
+    <l-prompt>De los cinco módulos de <code>game/</code>, ¿cuántos importan algo de
+    <code>ui/</code>?</l-prompt>
+    <l-option value="a">Ninguno</l-option>
+    <l-option value="b">Solo <code>state.ts</code>, para poder repintar</l-option>
+    <l-option value="c">Casi todos: es JS vanilla, no hay framework que los separe</l-option>
+    <l-actual>Ninguno. Las flechas van en un solo sentido: <code>ui/ → game/ → types</code>.</l-actual>
+    <l-miss for="c">Es la intuición razonable —sin framework nadie te obliga a separar—
+    pero aquí la separación es deliberada y se sostiene en los nueve ficheros.</l-miss>
+    <l-miss for="b">Es justo al revés: <code>state.ts</code> es el módulo más puro del
+    proyecto. No sabe que existe una pantalla.</l-miss>
+    <l-why><p>Esta es la decisión estructural que explica todo lo demás. <code>game/</code>
+    es lógica pura: recibe datos, devuelve datos, no toca el DOM ni <code>window</code>.
+    <code>ui/</code> sí toca el DOM, y para saber qué pintar importa los tipos y las
+    funciones de <code>game/</code>.</p>
+    <p>La consecuencia práctica: los 48 tests del proyecto viven todos sobre
+    <code>game/</code> y ninguno necesita un navegador ni un DOM simulado. Si añades
+    lógica y te ves importando algo de <code>ui/</code>, es señal de que esa lógica está
+    en la capa equivocada.</p></l-why>
+  </l-quiz>
+
+  <div class="ml-story-grid" style="margin-top:2rem">
+    <div class="ml-story-stage">
+      <l-stage id="mapa" label="Dependencias reales" sticky>
+        <l-flow cols="3">
+          <l-node id="main"  data-part="main"  col="1" row="1">main.ts<small>estado vivo</small></l-node>
+          <l-node id="ui"    data-part="ui"    col="2" row="1">ui/<small>screens · components · dom</small></l-node>
+          <l-node id="data"  data-part="data"  col="3" row="1" data-reveal="later">countries.json<small>242 países</small></l-node>
+          <l-node id="game"  data-part="game"  col="2" row="2">game/<small>questions · state · normalize · scoring</small></l-node>
+          <l-node id="types" data-part="types" col="2" row="3" data-reveal="later">types.ts<small>sin imports</small></l-node>
+          <l-edge from="main" to="ui"></l-edge>
+          <l-edge from="main" to="game"></l-edge>
+          <l-edge from="main" to="data"></l-edge>
+          <l-edge from="ui" to="game"></l-edge>
+          <l-edge from="game" to="types"></l-edge>
+          <l-edge from="ui" to="types"></l-edge>
+        </l-flow>
+      </l-stage>
+    </div>
+
+    <div>
+      <l-scene name="m1" stage="mapa" focus="main">
+        <p><code>main.ts</code> son 101 líneas y es el único sitio con estado mutable:
+        un <code>let state: GameState</code>. Todo lo demás es puro.</p>
+      </l-scene>
+      <l-scene name="m2" stage="mapa" focus="ui">
+        <p><code>ui/</code> pinta. <code>screens.ts</code> son 259 líneas —el fichero más
+        grande del proyecto—, <code>components.ts</code> construye trozos reutilizables y
+        <code>dom.ts</code> son 35 líneas de utilidades sin ninguna dependencia.</p>
+      </l-scene>
+      <l-scene name="m3" stage="mapa" focus="game">
+        <p><code>game/</code> decide. Generar preguntas, avanzar el estado, normalizar texto
+        y guardar récords. Ni una línea toca el DOM.</p>
+      </l-scene>
+      <l-scene name="m4" stage="mapa" reveal="types" focus="types">
+        <p>Y <code>types.ts</code> está en el fondo, sin importar nada. Es lo que permite que
+        las dos capas hablen sin conocerse.</p>
+      </l-scene>
+      <l-scene name="m5" stage="mapa" reveal="data" focus="data">
+        <p>Los datos entran por <code>main.ts</code> como un JSON importado, no por
+        <code>game/</code>. Por eso los tests pueden pasarle diez países de mentira.</p>
+      </l-scene>
+    </div>
+  </div>
+</l-section>
+
+<l-section id="estado" title="GameState: la estructura que pasa por todo"
+           goal="Conocer el objeto que atraviesa las tres capas">
+  <p>Hay un único objeto de estado. Todas las funciones de <code>game/state.ts</code> lo
+  reciben y devuelven uno nuevo; nadie lo muta.</p>
+  <pre><code class="lang-ts">export interface GameState {
+  screen: Screen;
+  config: GameConfig;
+  questions: Question[];
+  currentIndex: number;
+  score: number;
+  correctCount: number;
+  wrongCount: number;
+  answered: boolean;
+  lastAnswerCorrect: boolean | null;
+}</code></pre>
+
+  <l-anatomy hint="Pulsa cada campo para ver quién lo usa.">
+    <l-part label="screen"><l-note><p><code>"start" | "question" | "summary"</code>. Es todo
+    el enrutado que tiene el juego: <code>Screens.render()</code> hace un
+    <code>if/else if</code> sobre este campo y no hay router ni URL.</p></l-note></l-part>
+    <l-part label="config"><l-note><p>El <code>GameConfig</code> del nivel, sacado de
+    <code>LEVEL_CONFIGS</code>. Lleva el pool, cuántas preguntas, cuántos puntos vale cada
+    una y qué tipos de pregunta se permiten.</p></l-note></l-part>
+    <l-part label="questions + currentIndex"><l-note><p>La partida entera se genera de
+    golpe al empezar y se guarda aquí. No se van creando sobre la marcha, así que
+    <code>currentIndex</code> es un simple cursor sobre un array ya cerrado.</p></l-note></l-part>
+    <l-part label="answered"><l-note><p>Bandera anti-doble-clic. <code>recordAnswer</code>
+    en <code>main.ts</code> empieza con <code>if (state.answered) return;</code>, y sin eso
+    podrías puntuar dos veces la misma pregunta.</p></l-note></l-part>
+    <l-part label="lastAnswerCorrect"><l-note><p><code>boolean | null</code>. El
+    <code>null</code> no es pereza: distingue «todavía no ha respondido» de «respondió mal»,
+    que es lo que la pantalla necesita para saber si pinta feedback.</p></l-note></l-part>
+    <l-part label="score / correctCount / wrongCount"><l-note><p>Tres contadores en vez de
+    derivarlos de <code>questions</code>. Redundante a propósito: la pantalla de resumen los
+    lee directamente sin recorrer nada.</p></l-note></l-part>
+  </l-anatomy>
+</l-section>
+
+<l-section id="flujo" title="Qué ocurre cuando el jugador pulsa una opción"
+           goal="Seguir una ejecución concreta a través de las tres capas">
+  <p>El cableado se monta una sola vez, en <code>main.ts</code>: la UI recibe callbacks y
+  nunca toca el estado por su cuenta.</p>
+  <pre><code class="lang-ts">const screens = new Screens(appRoot, {
+  onStart:   (pool: Pool)      =&gt; startGame(pool),
+  onAnswer:  (correct: boolean) =&gt; recordAnswer(correct),
+  onNext:    ()                =&gt; advance(),
+  onRestart: ()                =&gt; startGame(state.config.pool),
+  onHome:    ()                =&gt; goHome(),
+});</code></pre>
+
+  <l-quiz mode="arrange">
+    <l-prompt>Ordena lo que ocurre desde que el jugador pulsa una opción correcta hasta que
+    ve la siguiente pregunta.</l-prompt>
+    <l-item>screens.ts detecta el clic en la opción</l-item>
+    <l-item>llama al callback onAnswer(true)</l-item>
+    <l-item>main.ts ejecuta recordAnswer y comprueba state.answered</l-item>
+    <l-item>state.ts devuelve un GameState nuevo con la puntuación sumada</l-item>
+    <l-item>el jugador pulsa «Siguiente» y se dispara onNext</l-item>
+    <l-item>advance() llama a nextQuestion y luego a screens.render</l-item>
+    <l-why><p>Un solo sentido: la UI avisa hacia arriba, <code>main.ts</code> reemplaza el
+    estado, y solo entonces se vuelve a pintar. La UI nunca escribe en
+    <code>state</code>.</p></l-why>
+  </l-quiz>
+
+  <l-split ratio="1:1" sticky>
+    <div>
+      <p style="margin-top:1.5rem">Con una excepción, y conviene conocerla antes de tocar
+      nada. Esta es <code>recordAnswer</code> entera:</p>
+      <pre><code class="lang-ts">function recordAnswer(correct: boolean): void {
+  if (state.answered) return;
+  state = correct ? recordCorrect(state) : recordWrong(state);
+  // Actualizar solo el contador de puntuación
+  // en el header sin re-renderizar todo
+  const scoreEl = document.querySelector(".score");
+  if (scoreEl) {
+    scoreEl.textContent = String(state.score);
+  }
+}</code></pre>
+    </div>
+    <l-stage label="La ejecución, paso a paso">
+      <l-trace>
+        <l-tstep detail="El estado cambia: score +100, correctCount +1, answered = true.">state = recordCorrect(state)</l-tstep>
+        <l-tstep detail="No se llama a screens.render(). La pantalla sigue mostrando el estado anterior.">no hay re-render</l-tstep>
+        <l-tstep detail="main.ts busca .score en el documento y le escribe el número a mano.">querySelector('.score')</l-tstep>
+        <l-tstep detail="Solo cuando el jugador pulsa Siguiente, advance() vuelve a pintar la pantalla entera.">render() llega después</l-tstep>
+      </l-trace>
+    </l-stage>
+  </l-split>
+
+  <l-quiz mode="spot" answer="r3" confidence>
+    <l-prompt>Una sola línea de esa función rompe el flujo unidireccional. Púlsala.</l-prompt>
+    <l-situation>
+      <div class="ml-spot">
+<span class="ml-spot-line">function recordAnswer(correct: boolean): void {</span>
+<span class="ml-spot-line">  <l-region id="r1">if (state.answered) return;</l-region></span>
+<span class="ml-spot-line">  <l-region id="r2">state = correct ? recordCorrect(state) : recordWrong(state);</l-region></span>
+<span class="ml-spot-line">  <l-region id="r3">const scoreEl = document.querySelector(".score");</l-region></span>
+<span class="ml-spot-line">  <l-region id="r4">if (scoreEl) scoreEl.textContent = String(state.score);</l-region></span>
+<span class="ml-spot-line">}</span>
+      </div>
+    </l-situation>
+    <l-why><p><code>main.ts</code> consulta el DOM directamente. En todo el resto del
+    proyecto, pintar es trabajo de <code>ui/</code> y ocurre dentro de
+    <code>screens.render(state)</code>; aquí se salta esa capa para no repintar la pantalla
+    entera por un número.</p>
+    <p>Es un atajo consciente —el comentario lo dice— y funciona. Pero deja una trampa: si
+    añades cualquier otra cosa que dependa de la puntuación —una barra de progreso, un aviso
+    de récord—, no se actualizará, porque el único elemento que se refresca aquí es
+    <code>.score</code>. Y si alguien renombra esa clase en el CSS, el marcador deja de
+    subir sin que falle nada ni salte ningún test.</p></l-why>
+  </l-quiz>
+</l-section>
+
+<l-section id="preguntas" title="generateQuestions: cómo se arma una partida"
+           goal="Entender cómo se eligen país, tipo de pregunta y distractores">
+  <p>Al empezar un nivel se genera la partida completa. Tres decisiones seguidas: qué países
+  entran, qué tipos de pregunta hay, y qué distractores acompañan a cada respuesta.</p>
+  <pre><code class="lang-ts">const pool = allCountries.filter((c) =&gt; poolRank(c.pool) &lt;= poolRank(config.pool));
+
+const distractors = sample(pool.filter((c) =&gt; c.cca2 !== answer?.cca2), 3);
+const options = shuffle([answer, ...distractors]);</code></pre>
+  <p>El pool es <b>acumulativo</b>: en difícil entran también los países de fácil y medio,
+  porque <code>poolRank</code> los ordena 0, 1, 2 y el filtro es <code>&lt;=</code>.</p>
+
+  <p style="margin-top:1.75rem">El reparto de tipos tiene un detalle que conviene mirar
+  despacio. El plan pedía «50% + 50%» para el nivel medio, que son 15 preguntas:</p>
+  <pre><code class="lang-ts">/**
+ * medium: 8 name-to-flag + 7 silhouette-to-name (15 total)
+ */
+const half  = Math.floor(total / 2);
+const other = total - half;</code></pre>
+
+  <l-quiz mode="prediction" answer="b">
+    <l-prompt>Con <code>total = 15</code>, ¿qué reparto sale de ahí?</l-prompt>
+    <l-option value="a">8 nombre→bandera y 7 silueta→nombre, como dice el comentario</l-option>
+    <l-option value="b">7 nombre→bandera y 8 silueta→nombre</l-option>
+    <l-option value="c">7 y 7, descartando la que sobra</l-option>
+    <l-actual>7 y 8. El comentario de encima dice lo contrario.</l-actual>
+    <l-miss for="a">Es lo razonable: el comentario está pegado a la función y describe justo
+    este reparto. Pero <code>Math.floor(15 / 2)</code> es 7, y ese 7 va al primer bucle.</l-miss>
+    <l-miss for="c">No se descarta nada: <code>other = total - half</code> recoge siempre el
+    resto, así que suman 15.</l-miss>
+    <l-why><p>El desempate cae del lado de las siluetas. El test lo fija con
+    <code>expect(n2f).toBe(7); // floor(15/2)</code>, así que código y test coinciden — y el
+    comentario se quedó describiendo la intención original.</p>
+    <p>Es inofensivo para el jugador, pero es lo primero que te va a confundir si tocas esta
+    función fiándote de lo que hay escrito encima.</p></l-why>
+  </l-quiz>
+</l-section>
+
+<l-section id="normalize" title="normalizeName: aceptar lo que el jugador escribe"
+           goal="Ver por qué el orden de las operaciones importa aquí">
+  <p>En difícil, seis preguntas piden escribir el nombre del país. Compararlo con
+  <code>===</code> sería inusable, así que ambos lados pasan por esta cadena:</p>
+  <pre><code class="lang-ts">export function normalizeName(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/gu, "")
+    .trim()
+    .replace(/^(el|la|los|las)\s+/i, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}</code></pre>
+  <p><code>NFD</code> descompone cada letra acentuada en letra base más marca diacrítica
+  suelta, y el <code>replace</code> siguiente borra ese rango Unicode: así «España» y
+  «Espana» acaban iguales.</p>
+
+  <l-quiz mode="prediction" answer="b">
+    <l-prompt>El jugador escribe <code>"  El Salvador  "</code>, con espacios delante.
+    ¿Qué devuelve?</l-prompt>
+    <l-option value="a"><code>"el salvador"</code></l-option>
+    <l-option value="b"><code>"salvador"</code></l-option>
+    <l-option value="c"><code>" el salvador"</code></l-option>
+    <l-actual>"salvador" — el artículo desaparece y la respuesta se da por buena.</l-actual>
+    <l-miss for="a">Sería correcto si el <code>trim()</code> estuviera al final, que es donde
+    el plan del proyecto lo colocaba.</l-miss>
+    <l-why><p>Fíjate en que hay <b>dos</b> <code>trim()</code>, y el primero es el que
+    importa. La expresión <code>/^(el|la|los|las)\s+/</code> está anclada con
+    <code>^</code>: exige el artículo al principio exacto de la cadena.</p>
+    <p>Sin ese primer <code>trim</code>, la regex se encontraría <code>"  el salvador"</code>,
+    el ancla toparía con dos espacios en lugar de con la «e», no casaría, y el jugador vería
+    un fallo por haber pulsado la barra espaciadora de más.</p>
+    <p>El plan del proyecto ordenaba los pasos al revés —artículos antes del
+    <code>trim</code>—. El código se desvió y acertó. Y ningún test cubre este caso concreto:
+    <code>normalize.test.ts</code> prueba «La India» y prueba «  Estados   Unidos  », pero
+    nunca un artículo con espacios delante.</p></l-why>
+  </l-quiz>
+</l-section>
+
+<l-section id="datos" title="De dónde salen los 242 países"
+           goal="Saber cómo se construye el dataset y qué lo vigila">
+  <p><code>countries.json</code> no está escrito a mano: lo genera
+  <code>scripts/generate-countries.ts</code> a partir de los assets que hay en
+  <code>public/</code>. La línea que decide el tamaño del juego es esta:</p>
+  <pre><code class="lang-ts">const available = flags.filter((c) =&gt; silhouettes.includes(c)).sort();</code></pre>
+  <p>El dataset es <b>la intersección</b> entre las banderas y las siluetas disponibles: 271
+  banderas, 242 siluetas, 242 países jugables. El plan pedía 195 y la cabecera del propio
+  script ya lo dice claro — <code>hard (resto)</code>. El número no se eligió: se heredó de
+  dos paquetes de assets, y por eso el nivel difícil pregunta también por territorios y
+  dependencias.</p>
+
+  <p style="margin-top:1.5rem">Hay un fichero entero validando estos datos,
+  <code>tests/data.test.ts</code>, y pasa. Estas son sus aserciones sobre el tamaño:</p>
+  <pre><code class="lang-ts">expect(countriesData.length).toBeGreaterThan(0);
+expect(easy.length).toBeGreaterThanOrEqual(30);
+expect(medium.length).toBeGreaterThanOrEqual(50);
+expect(hard.length).toBeGreaterThan(0);</code></pre>
+
+  <l-quiz mode="choose" answer="d">
+    <l-prompt>¿Cuál de ellas habría fallado cuando los 195 previstos se convirtieron en 242?</l-prompt>
+    <l-option value="a">La del total: <code>toBeGreaterThan(0)</code></l-option>
+    <l-option value="b">La de <code>hard</code></l-option>
+    <l-option value="c">La de <code>medium</code>, porque el acumulado se dispara</l-option>
+    <l-option value="d">Ninguna: son todas cotas inferiores</l-option>
+    <l-miss for="a">Comprueba que el fichero no esté vacío. Con 195, con 242 o con 4.000 pasa
+    igual.</l-miss>
+    <l-miss for="b">Otra vez <code>toBeGreaterThan(0)</code>: mide que exista algo, no cuánto.</l-miss>
+    <l-miss for="c"><code>toBeGreaterThanOrEqual</code> pone suelo, nunca techo. Pasarse es
+    justo lo que no vigila.</l-miss>
+    <l-why><p>Las cuatro ponen un mínimo y dejan el máximo abierto, así que el dataset puede
+    crecer sin límite sin encender una luz roja. Lo que sí comprueban, y es lo importante
+    para trabajar aquí, es que <b>todo país del JSON tenga sus dos SVG</b>: si añades un país
+    sin silueta, ese test falla.</p>
+    <p>La lección práctica al tocar este repo: los tests de datos garantizan
+    <em>integridad</em> —nada roto, nada duplicado, ningún asset ausente— pero no
+    <em>tamaño</em>. Si el número de países importa para tu cambio, tendrás que afirmarlo tú.</p></l-why>
+  </l-quiz>
+</l-section>
+
+<l-section id="consolidar" title="" goal="Confirmar antes de cerrar">
+  <l-checkpoint title="Antes de tocar este repositorio deberías poder explicar">
+    <l-can>Por qué <code>game/</code> no importa nada de <code>ui/</code>, y qué pasa si lo haces</l-can>
+    <l-can>Dónde vive el estado mutable y quién tiene permiso para cambiarlo</l-can>
+    <l-can>Qué recorrido hace un clic desde <code>screens.ts</code> hasta el repintado</l-can>
+    <l-can>Qué línea de <code>recordAnswer</code> se salta la capa de UI y qué trampa deja</l-can>
+    <l-can>Por qué hay dos <code>trim()</code> en <code>normalizeName</code> y qué rompe quitar el primero</l-can>
+    <l-can>Cómo se genera <code>countries.json</code> y qué garantizan de verdad sus tests</l-can>
+  </l-checkpoint>
+</l-section>
+
+</scroll-story>
+
+<l-finish title="Cartógrafo, por dentro">
+  <l-next><p>Queda fuera la capa de presentación: <code>screens.ts</code> son 259 líneas de
+  construcción de DOM con el helper <code>el()</code> de <code>dom.ts</code>, y toda la
+  estética de atlas vintage vive en <code>styles/main.css</code> con animaciones CSS puras y
+  su <code>prefers-reduced-motion</code>. También queda fuera <code>docs/agents.md</code>,
+  que describe el bucle de agentes con el que se construyó el proyecto: agente principal,
+  skill con el protocolo, y un subagente verificador que devuelve PASS o FAIL.</p>
+  <p>Fuente: <code>/Users/daniel/Sites/lab/game-opencode-5</code>. Todo lo que se afirma aquí
+  sale de leer <code>src/</code>, <code>scripts/</code>, <code>tests/</code>,
+  <code>docs/plan.md</code> y <code>.opencode/journal.md</code>, y los 48 tests se ejecutaron
+  para comprobar que pasan.</p></l-next>
+</l-finish>
+
+</div>

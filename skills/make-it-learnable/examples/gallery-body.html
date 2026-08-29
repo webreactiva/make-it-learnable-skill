@@ -1,0 +1,548 @@
+<div class="ml-shell">
+
+<header class="ml-hero">
+  <p class="ml-eyebrow">Referencia de componentes · LLM</p>
+  <h1>Todas las piezas, una detrás de otra</h1>
+  <p class="ml-lede">Esto <b>no es una lección</b>: es el catálogo completo del vocabulario,
+  con sus variantes, relleno con conceptos de modelos de lenguaje. Una lección de verdad
+  usa cuatro o cinco de estas piezas. Aquí están las veinte a propósito, para poder
+  mirarlas juntas.</p>
+</header>
+
+<scroll-story>
+
+<!-- ═══ ESTRUCTURA ═══════════════════════════════════════════════ -->
+<l-section id="estructura" eyebrow="Estructura" title="Stack y Split"
+           goal="Ver los contenedores: ritmo vertical y dos cosas a la vez">
+
+  <h3>l-stack · density="tight"</h3>
+  <l-stack density="tight">
+    <p>Un modelo de lenguaje no lee palabras: lee <b>tokens</b>.</p>
+    <p>Un token es un trozo de texto que el tokenizador trata como unidad.</p>
+    <p>Palabras frecuentes suelen ser un token; las raras se parten en varios.</p>
+  </l-stack>
+
+  <h3 style="margin-top:2rem">l-stack · density="loose"</h3>
+  <l-stack density="loose">
+    <p>El mismo contenido con más aire entre piezas.</p>
+    <p><code>l-stack</code> es deliberadamente aburrido: solo compone.</p>
+  </l-stack>
+
+  <h3 style="margin-top:2rem">l-split · ratio="1:1"</h3>
+  <l-split ratio="1:1">
+    <div><p><b>Entrada</b><br>«Los modelos generan texto»</p></div>
+    <div><p><b>Tokens</b><br><code>[Los][ modelos][ generan][ texto]</code></p></div>
+  </l-split>
+
+  <h3 style="margin-top:2rem">l-split · ratio="1:2"</h3>
+  <l-split ratio="1:2">
+    <div><p><b>Nota</b><br>La columna derecha ocupa el doble.</p></div>
+    <div><p>Útil cuando un lado es una anotación breve y el otro carga el peso:
+    una explicación corta junto a un bloque de código, o un rótulo junto a una tabla.</p></div>
+  </l-split>
+
+  <h3 style="margin-top:2rem">l-split · ratio="2:1" + sticky</h3>
+  <l-split ratio="2:1" sticky>
+    <div>
+      <p>Con <code>sticky</code>, la segunda columna se queda fija mientras la primera
+      hace scroll. Es la forma de que el lector no tenga que recordar algo que acaba de
+      desaparecer de pantalla.</p>
+      <p>Cada llamada a un modelo reenvía <em>toda</em> la conversación. El modelo no
+      recuerda nada entre llamadas: lo que parece memoria es el historial completo
+      viajando otra vez por el cable.</p>
+      <p>Por eso una conversación larga se encarece aunque tú escribas una sola frase.</p>
+    </div>
+    <l-stage label="Se queda fijo">
+      <l-state name="petición nº 12">
+        <l-field key="historial" value="8.400 tok"></l-field>
+        <l-field key="tu mensaje" value="14 tok"></l-field>
+        <l-field key="se envía" value="8.414 tok"></l-field>
+      </l-state>
+    </l-stage>
+  </l-split>
+</l-section>
+
+<!-- ═══ NARRATIVA: ScrollStory + Scene + Stage + Flow + Focus + Reveal ═══ -->
+<l-section id="narrativa" eyebrow="Narrativa" title="ScrollStory sobre un Stage"
+           goal="Ver cómo las escenas transforman una misma representación">
+  <div class="ml-story-grid">
+    <div class="ml-story-stage">
+      <l-stage id="pipeline" label="Una pasada de inferencia" sticky>
+        <l-flow cols="3">
+          <l-node id="prompt"  data-part="prompt"  col="1" row="1">Prompt<small>texto</small></l-node>
+          <l-node id="tokens"  data-part="tokens"  col="2" row="1">Tokenizador<small>texto → ids</small></l-node>
+          <l-node id="modelo"  data-part="modelo"  col="3" row="1">Modelo<small>pasada hacia delante</small></l-node>
+          <l-node id="logits"  data-part="logits"  col="3" row="2" data-reveal="later">Logits<small>una puntuación por token del vocabulario</small></l-node>
+          <l-node id="sampler" data-part="sampler" col="2" row="2" data-reveal="later">Muestreo<small>temperature · top-p</small></l-node>
+          <l-node id="salida"  data-part="salida"  col="1" row="2" data-reveal="later">Token<small>uno solo</small></l-node>
+          <l-edge from="prompt" to="tokens"></l-edge>
+          <l-edge from="tokens" to="modelo"></l-edge>
+          <l-edge from="modelo" to="logits"></l-edge>
+          <l-edge from="logits" to="sampler"></l-edge>
+          <l-edge from="sampler" to="salida"></l-edge>
+          <l-edge from="salida" to="modelo" label="y otra vez"></l-edge>
+        </l-flow>
+      </l-stage>
+    </div>
+
+    <div>
+      <l-scene name="s1" stage="pipeline" focus="prompt">
+        <p>Todo empieza con texto. Lo que tú escribes, más las instrucciones del sistema,
+        más lo que se haya recuperado de una base de datos: todo es una sola cadena.</p>
+      </l-scene>
+
+      <l-scene name="s2" stage="pipeline" focus="tokens">
+        <p>El tokenizador la parte en unidades y las convierte en números. A partir de
+        aquí el modelo no vuelve a ver letras.</p>
+      </l-scene>
+
+      <l-scene name="s3" stage="pipeline" focus="modelo">
+        <p>La pasada hacia delante. Aquí está prácticamente todo el coste, y crece con el
+        cuadrado de la longitud de la secuencia en la atención clásica.</p>
+      </l-scene>
+
+      <l-scene name="s4" stage="pipeline" reveal="logits" focus="logits">
+        <p>Lo que sale no es una palabra: es una puntuación para <em>cada</em> token del
+        vocabulario. Decenas de miles de números.</p>
+      </l-scene>
+
+      <l-scene name="s5" stage="pipeline" reveal="sampler" focus="sampler">
+        <p>El muestreo convierte esas puntuaciones en una elección.
+        <code>temperature</code> las escala antes del softmax; <code>top-p</code> recorta
+        la cola de la distribución.</p>
+      </l-scene>
+
+      <l-scene name="s6" stage="pipeline" reveal="salida" focus="salida">
+        <p>Y sale <b>un</b> token. Uno.</p>
+      </l-scene>
+
+      <l-scene name="s7" stage="pipeline" focus="salida modelo">
+        <p>Que se añade al final del contexto y vuelve a entrar. Una respuesta de 800
+        tokens son 800 vueltas a este circuito.</p>
+      </l-scene>
+    </div>
+  </div>
+
+  <h3 style="margin-top:2.5rem">l-focus suelto y l-reveal por clic</h3>
+  <l-focus target="modelo" stage="pipeline">
+    <p>Un <code>l-focus</code> fuera de una escena se activa al entrar en pantalla por su
+    cuenta. Este acaba de volver a iluminar el modelo, arriba.</p>
+  </l-focus>
+
+  <l-reveal label="Enseñar por qué el coste no es lineal">
+    <p>La atención compara cada token con todos los demás. Doblar la longitud no dobla el
+    trabajo: lo multiplica aproximadamente por cuatro. Es la razón de que las ventanas de
+    contexto largas sean caras y de que exista tanta ingeniería para esquivar ese cuadrado.</p>
+  </l-reveal>
+</l-section>
+
+<!-- ═══ ATENCIÓN: Anatomy, Compare, Layer ═══════════════════════ -->
+<l-section id="atencion" eyebrow="Atención" title="Anatomy, Compare y Layer"
+           goal="Descomponer, comparar y filtrar dimensiones">
+
+  <h3>l-anatomy</h3>
+  <l-anatomy hint="Pulsa cada parte de un prompt para inspeccionarla.">
+    <l-part label="Sistema"><l-note><p>Quién es el modelo y cómo debe comportarse.
+    Permanece igual en toda la conversación, así que es el sitio de las reglas
+    estables, no de los datos de esta petición.</p></l-note></l-part>
+    <l-part label="Instrucciones"><l-note><p>Qué tarea hay que hacer. Cuanto más
+    concreta y verificable, mejor: «responde en una frase» se puede comprobar,
+    «sé conciso» no.</p></l-note></l-part>
+    <l-part label="Contexto"><l-note><p>Lo que se ha recuperado o pegado para esta
+    petición. Suele ser la parte más grande y la que más cuesta.</p></l-note></l-part>
+    <l-part label="Ejemplos"><l-note><p>Demostraciones del formato deseado. Muy potentes
+    — tanto que si contradicen a las instrucciones, suelen ganar los ejemplos.</p></l-note></l-part>
+    <l-part label="Entrada del usuario"><l-note><p>La petición concreta. Lo único que
+    cambia en cada turno.</p></l-note></l-part>
+    <l-part label="Restricciones de salida"><l-note><p>Formato, longitud, esquema.
+    Ponerlas al final ayuda: es lo último que el modelo lee antes de generar.</p></l-note></l-part>
+  </l-anatomy>
+
+  <h3 style="margin-top:2.5rem">l-compare</h3>
+  <l-compare label="">
+    <l-column>Ventana de contexto</l-column>
+    <l-column>Recuperación (RAG)</l-column>
+    <l-criterion name="Dónde vive lo que sabe">
+      <l-cell>En la petición, cada vez</l-cell>
+      <l-cell>En un índice externo</l-cell>
+    </l-criterion>
+    <l-criterion name="Coste por llamada">
+      <l-cell>Crece con todo lo que metas</l-cell>
+      <l-cell>Solo los fragmentos recuperados</l-cell>
+    </l-criterion>
+    <l-criterion name="Actualizar un dato">
+      <l-cell>Reenviarlo entero</l-cell>
+      <l-cell>Reindexar ese documento</l-cell>
+    </l-criterion>
+    <l-criterion name="Cómo falla">
+      <l-cell>Se pierde en medio de contextos largos</l-cell>
+      <l-cell>Recupera el fragmento equivocado y responde con aplomo</l-cell>
+    </l-criterion>
+  </l-compare>
+
+  <h3 style="margin-top:2.5rem">l-layer</h3>
+  <l-layer stage="capas" layers="coste memoria calidad" default="coste"
+           label-coste="Coste" label-memoria="Memoria" label-calidad="Calidad"></l-layer>
+  <l-stage id="capas" label="Una misma decisión, tres preguntas">
+    <div data-part="c" data-layer="coste"><p><b>Coste.</b> Se paga por token, y la entrada
+    y la salida no valen lo mismo. Un contexto largo se paga en cada turno, no una vez.</p></div>
+    <div data-part="m" data-layer="memoria"><p><b>Memoria.</b> La caché de claves y valores
+    crece de forma lineal con el contexto. Es lo que limita cuántas peticiones caben a la
+    vez en una GPU.</p></div>
+    <div data-part="q" data-layer="calidad"><p><b>Calidad.</b> Más contexto no es
+    monótonamente mejor: la información relevante se diluye entre la irrelevante.</p></div>
+  </l-stage>
+</l-section>
+
+<!-- ═══ COMPORTAMIENTO: Transform, Trace, State, Stepper ════════ -->
+<l-section id="comportamiento" eyebrow="Comportamiento" title="Transform, Trace, State y Stepper"
+           goal="Ver cambios, ejecuciones concretas y estado interno">
+
+  <h3>l-transform</h3>
+  <l-transform>
+    <l-phase name="Texto">"hola mundo"</l-phase>
+    <l-phase name="Tokens">[15339, 1917]</l-phase>
+    <l-phase name="Vectores">matriz d×n</l-phase>
+    <l-phase name="Logits">|vocabulario|</l-phase>
+    <l-phase name="Token">uno</l-phase>
+  </l-transform>
+
+  <h3 style="margin-top:2.5rem">l-stepper conduciendo un l-stage</h3>
+  <l-split ratio="1:1">
+    <l-stepper stage="gen">
+      <l-step state="p1"><p><b>Paso 1.</b> El contexto son solo tus 14 tokens. La caché
+      está vacía y hay que calcularla entera.</p></l-step>
+      <l-step state="p2"><p><b>Paso 2.</b> Ya hay un token generado. La caché guarda el
+      trabajo del paso anterior, así que esta pasada solo procesa el token nuevo.</p></l-step>
+      <l-step state="p3"><p><b>Paso 3.</b> Y así hasta el final. Cada token nuevo es
+      barato; lo caro fue la primera pasada sobre todo el prompt.</p></l-step>
+    </l-stepper>
+    <l-stage id="gen" label="Estado de la generación">
+      <l-state name="runtime">
+        <l-field key="tokens de entrada" value="14"></l-field>
+        <l-field key="generados" value="0"></l-field>
+        <l-field key="caché KV" value="14 posiciones"></l-field>
+      </l-state>
+    </l-stage>
+  </l-split>
+
+  <h3 style="margin-top:2.5rem">l-trace</h3>
+  <l-trace>
+    <l-tstep detail="Llega la petición. Nada se ha calculado todavía.">recibir la petición</l-tstep>
+    <l-tstep detail="El texto se parte en unidades y se convierte en enteros. Aquí ya se sabe cuánto va a costar la entrada.">tokenizar</l-tstep>
+    <l-tstep detail="La pasada más cara de toda la generación: procesa el prompt completo de una vez.">primera pasada</l-tstep>
+    <l-tstep detail="Una puntuación por cada token del vocabulario. Todavía no hay ninguna decisión tomada.">obtener logits</l-tstep>
+    <l-tstep detail="temperature escala, top-p recorta, y se elige uno. Es el único punto donde entra el azar.">muestrear</l-tstep>
+    <l-tstep detail="El token elegido se añade al contexto y vuelve a empezar, ahora con la caché caliente.">repetir</l-tstep>
+  </l-trace>
+</l-section>
+
+<!-- ═══ EXPERIMENTACIÓN: WhatIf inline, WhatIf panel, Sandbox ═══ -->
+<l-section id="experimentacion" eyebrow="Experimentación" title="WhatIf y Sandbox"
+           goal="Tocar el modelo en lugar de leer sobre él">
+
+  <h3>l-whatif inline · números arrastrables dentro de la prosa</h3>
+  <l-whatif inline>
+    <p>Si tu prompt de sistema ocupa
+    <l-var name="sys" min="0" max="4000" value="600" step="50" unit=" tok" label="prompt de sistema"></l-var>
+    y cada turno de conversación añade de media
+    <l-var name="turno" min="20" max="600" value="120" step="10" unit=" tok" label="tokens por turno"></l-var>,
+    en el turno número
+    <l-var name="n" min="1" max="60" value="20" step="1" unit="" label="número de turno"></l-var>
+    estarás enviando <l-out name="total" expr="sys + turno*n" unit=" tokens"></l-out>
+    en una sola llamada — y habrás enviado
+    <l-out name="acum" expr="sys*n + turno*n*(n+1)/2" unit=" tokens"></l-out> acumulados
+    desde el principio de la conversación.</p>
+    <p class="ml-scrub-hint">Arrastra cualquier número naranja, o enfócalo y usa las flechas.</p>
+  </l-whatif>
+
+  <p>Sube el número de turno y mira el acumulado: crece de forma cuadrática porque cada
+  turno reenvía todos los anteriores. Es la aritmética que explica por qué las
+  conversaciones largas se vuelven caras solas.</p>
+
+  <h3 style="margin-top:2.5rem">l-whatif panel · range, toggle y select</h3>
+  <l-whatif>
+    <l-var name="entrada" type="range" min="500" max="100000" value="8000" step="500" unit=" tok" label="Tokens de entrada"></l-var>
+    <l-var name="salida" type="range" min="50" max="4000" value="600" step="50" unit=" tok" label="Tokens de salida"></l-var>
+    <l-var name="cache" type="toggle" value label="Caché de prompt activa"></l-var>
+    <l-out name="coste" label="Coste por llamada (3 $/M entrada, 15 $/M salida)"
+           expr="((cache ? entrada*0.1 : entrada)*3 + salida*15)/1000000"
+           unit=" $" good="low" threshold="0.02"></l-out>
+    <l-out name="dia" label="Coste de 10.000 llamadas al día"
+           expr="((cache ? entrada*0.1 : entrada)*3 + salida*15)/1000000*10000"
+           unit=" $" good="low" threshold="200"></l-out>
+    <l-out name="peso" label="La entrada es este % del gasto"
+           expr="Math.round((cache ? entrada*0.1 : entrada)*3 / ((cache ? entrada*0.1 : entrada)*3 + salida*15) * 100)"
+           unit=" %"></l-out>
+  </l-whatif>
+  <p style="font-size:.9rem;color:var(--ml-muted);max-width:56ch">Los precios son un
+  supuesto declarado, no una tarifa real de ningún proveedor: la aritmética es lo que se
+  enseña aquí, no el precio.</p>
+
+  <h3 style="margin-top:2.5rem">l-sandbox</h3>
+  <p>Un tokenizador de juguete: parte por espacios y signos. No es el de ningún modelo
+  real, pero enseña la idea de que el texto se vuelve una lista de piezas.</p>
+  <l-sandbox run-label="Ejecutar">
+const texto = "Los modelos no leen palabras, leen tokens.";
+const piezas = texto.match(/\w+|[^\w\s]/g);
+console.log(piezas);
+console.log("piezas:", piezas.length, "· caracteres:", texto.length);
+  </l-sandbox>
+  <p style="font-size:.9rem;color:var(--ml-muted)">Los navegadores bloquean el sandbox
+  sobre <code>file://</code>. Sírvelo por HTTP para verlo funcionar.</p>
+</l-section>
+
+<!-- ═══ COMPROBACIONES: las 7 mecánicas y sus variantes ════════ -->
+<l-section id="prediction" eyebrow="Comprobaciones" title="prediction · con opciones"
+           goal="La mecánica más fuerte: comprometerse antes del reveal">
+  <l-quiz mode="prediction" answer="c" confidence>
+    <l-prompt>Doblas la longitud del prompt. En la atención clásica, ¿por cuánto se
+    multiplica aproximadamente el trabajo de esa capa?</l-prompt>
+    <l-option value="a">Por 1: es indiferente</l-option>
+    <l-option value="b">Por 2: el doble de texto, el doble de trabajo</l-option>
+    <l-option value="c">Por 4: cada token se compara con todos los demás</l-option>
+    <l-actual>Por cuatro, aproximadamente. La atención es cuadrática en la longitud
+    de la secuencia.</l-actual>
+    <l-miss for="b">Es la intuición razonable y es la que casi todo el mundo trae: doble
+    entrada, doble coste. Funciona para tokenizar y para la facturación por token, pero
+    no para la atención, donde cada token atiende a todos los demás.</l-miss>
+    <l-miss for="a">El coste sí depende de la longitud, y mucho. Es justo la razón de que
+    las ventanas de contexto largas sean un problema de ingeniería.</l-miss>
+    <l-why><p>Con n tokens hay del orden de n² pares. Doblar n multiplica los pares por
+    cuatro.</p><p>De ahí sale casi toda la ingeniería moderna de inferencia: cachés,
+    atención por ventanas, variantes de atención dispersa. Todas intentan esquivar ese
+    cuadrado.</p></l-why>
+  </l-quiz>
+</l-section>
+
+<l-section id="prediction2" title="prediction · texto libre, sin opciones"
+           goal="La misma mecánica cuando no quieres dar pistas">
+  <l-quiz mode="prediction">
+    <l-prompt>Sin mirar abajo: en cada paso de generación, ¿qué produce exactamente el
+    modelo? Escríbelo con tus palabras.</l-prompt>
+    <l-key match="distribuci|probabilidad|puntuaci|logit">Una distribución de probabilidad, no una palabra</l-key>
+    <l-key match="vocabulario|todos los token|cada token">Sobre todo el vocabulario a la vez</l-key>
+    <l-key match="siguiente|próximo|next">Solo para el token siguiente</l-key>
+    <l-actual>Una puntuación para cada token del vocabulario — decenas de miles de
+    números — de la que después se elige uno.</l-actual>
+    <l-why><p>El modelo nunca «escribe una respuesta». Predice una distribución para el
+    token siguiente, el muestreo elige uno, y el bucle se repite. Todo lo que parece
+    planificación es ese bucle visto desde fuera.</p></l-why>
+  </l-quiz>
+</l-section>
+
+<l-section id="choose" title="choose · respuesta única y respuesta múltiple"
+           goal="La clásica, en sus dos formas">
+  <l-quiz mode="choose" answer="b">
+    <l-prompt>¿Qué guarda exactamente la caché de claves y valores durante una generación?</l-prompt>
+    <l-option value="a">Las respuestas anteriores, por si se repite la pregunta</l-option>
+    <l-option value="b">Los cálculos intermedios de los tokens ya procesados</l-option>
+    <l-option value="c">Los pesos del modelo, para no releerlos de disco</l-option>
+    <l-miss for="a">Esa es una caché de respuestas, que también existe pero es otra cosa
+    y vive en la capa de aplicación.</l-miss>
+    <l-miss for="c">Los pesos se cargan una vez y no cambian entre peticiones; no es lo
+    que crece durante una generación.</l-miss>
+    <l-why><p>Evita recalcular desde cero el prompt entero en cada token nuevo. Por eso
+    el primer token tarda mucho más que los siguientes.</p></l-why>
+  </l-quiz>
+
+  <h3 style="margin-top:2.5rem">Respuesta múltiple — <code>answer="a b"</code></h3>
+  <l-quiz mode="choose" answer="a b">
+    <l-prompt>¿Cuáles de estas afirmaciones sobre <code>temperature</code> son ciertas?
+    Puede haber más de una.</l-prompt>
+    <l-option value="a">Escala las puntuaciones antes de convertirlas en probabilidades</l-option>
+    <l-option value="b">Con temperature 0 se elige siempre el token más probable</l-option>
+    <l-option value="c">Subirla hace que el modelo sepa más cosas</l-option>
+    <l-option value="d">Cambia qué tokens existen en el vocabulario</l-option>
+    <l-miss for="c">Sube la variedad, no el conocimiento. Un modelo con temperature alta
+    no sabe más: solo elige con menos frecuencia la opción más probable.</l-miss>
+    <l-miss for="d">El vocabulario lo fija el tokenizador y no cambia en tiempo de
+    ejecución. Lo que cambia es la probabilidad de cada uno.</l-miss>
+    <l-why><p>Temperature es un parámetro del <em>muestreo</em>, no del modelo. El modelo
+    produce las mismas puntuaciones; temperature solo decide cuánto respetas su orden.</p></l-why>
+  </l-quiz>
+</l-section>
+
+<l-section id="spot" title="spot · encontrarlo en material real"
+           goal="Reconocer un fallo en contexto, no en abstracto">
+  <l-quiz mode="spot" answer="r3" confidence>
+    <l-prompt>Este prompt devuelve respuestas largas por más que se le pida lo contrario.
+    Pulsa la línea que lo causa.</l-prompt>
+    <l-situation>
+      <div class="ml-spot">
+<span class="ml-spot-line"><l-region id="r1">SISTEMA: Eres un asistente conciso. Responde siempre en una sola frase.</l-region></span>
+<span class="ml-spot-line"></span>
+<span class="ml-spot-line"><l-region id="r2">CONTEXTO: [2.800 tokens de documentación del producto]</l-region></span>
+<span class="ml-spot-line"></span>
+<span class="ml-spot-line">EJEMPLO:</span>
+<span class="ml-spot-line">  P: ¿Qué es un token?</span>
+<span class="ml-spot-line">  <l-region id="r3">R: Un token es la unidad mínima que procesa el modelo. Conviene</l-region></span>
+<span class="ml-spot-line">  <l-region id="r3b">     distinguirlo de una palabra, ya que las palabras frecuentes...</l-region></span>
+<span class="ml-spot-line"></span>
+<span class="ml-spot-line"><l-region id="r4">USUARIO: {pregunta}</l-region></span>
+      </div>
+    </l-situation>
+    <l-why><p>La instrucción pide una frase y el ejemplo enseña un párrafo. Cuando una
+    demostración contradice a una instrucción, la demostración suele ganar: el ejemplo
+    es una muestra concreta del formato esperado y la instrucción es una descripción
+    abstracta de él.</p>
+    <p>El arreglo no es insistir más en la instrucción. Es cambiar el ejemplo por uno
+    que sea de verdad una sola frase.</p></l-why>
+  </l-quiz>
+</l-section>
+
+<l-section id="classify" title="classify · separar lo que se confunde"
+           goal="La mejor mecánica para categorías que se mezclan">
+  <l-quiz mode="classify">
+    <l-prompt>Ordena cada pieza según dónde debería vivir.</l-prompt>
+    <l-bucket name="Prompt de sistema">
+      <l-item>el tono y el rol</l-item>
+      <l-item>el formato de salida</l-item>
+      <l-item>lo que nunca debe hacer</l-item>
+    </l-bucket>
+    <l-bucket name="Turno del usuario">
+      <l-item>la pregunta concreta</l-item>
+      <l-item>el fragmento a resumir</l-item>
+    </l-bucket>
+    <l-bucket name="Ni en uno ni en otro">
+      <l-item>una clave de API</l-item>
+      <l-item>datos personales que no hacen falta</l-item>
+    </l-bucket>
+    <l-why><p>El criterio es la <b>estabilidad</b>: lo que vale igual en todos los turnos
+    va en el sistema; lo que cambia en cada petición va en el turno. Meter lo variable en
+    el sistema obliga a reconstruirlo constantemente y estropea la caché de prompt.</p>
+    <p>El tercer grupo no es un chiste: un prompt es texto que viaja a un tercero, se
+    puede quedar en logs y puede acabar reflejado en una respuesta.</p></l-why>
+  </l-quiz>
+</l-section>
+
+<l-section id="arrange" title="arrange · orden de un proceso, y ordenación por una propiedad"
+           goal="La misma mecánica en sus dos usos">
+  <l-quiz mode="arrange">
+    <l-prompt>Pon en orden lo que ocurre al generar un token. Usa los botones ↑ ↓ — también
+    funcionan con el teclado.</l-prompt>
+    <l-item>llega el texto de la petición</l-item>
+    <l-item>el tokenizador lo convierte en enteros</l-item>
+    <l-item>una pasada hacia delante por el modelo</l-item>
+    <l-item>salen los logits del token siguiente</l-item>
+    <l-item>el muestreo elige uno</l-item>
+    <l-item>se añade al contexto y vuelve a empezar</l-item>
+    <l-why><p>El bucle es la parte que más cuesta interiorizar. No hay una fase de
+    «pensar» y otra de «escribir»: hay una única pasada que se repite una vez por token.</p></l-why>
+  </l-quiz>
+
+  <h3 style="margin-top:2.5rem">Con <code>low</code> y <code>high</code>, es una ordenación</h3>
+  <l-quiz mode="arrange" low="más barata" high="más cara">
+    <l-prompt>Ordena estas llamadas por coste, suponiendo el mismo modelo y el mismo precio por token.</l-prompt>
+    <l-item>500 tokens de entrada · 50 de salida</l-item>
+    <l-item>500 de entrada · 500 de salida</l-item>
+    <l-item>5.000 de entrada · 500 de salida</l-item>
+    <l-item>50.000 de entrada · 2.000 de salida</l-item>
+    <l-why><p><code>arrange</code> comprueba el orden de un proceso;
+    <code>arrange</code> con extremos etiquetados comprueba el orden según una
+    propiedad. Misma mecánica, pregunta distinta.</p></l-why>
+  </l-quiz>
+</l-section>
+
+<l-section id="estimate" title="estimate · con deslizador y con tramos"
+           goal="Hacer explícita la intuición cuantitativa">
+  <l-quiz mode="estimate" min="0" max="2000" step="10" unit=" pasadas" actual="800" tolerance="0.2" confidence>
+    <l-prompt>El modelo devuelve una respuesta de 800 tokens. ¿Cuántas pasadas hacia
+    delante ha hecho para producirla?</l-prompt>
+    <l-why><p>Ochocientas: una por token. La generación es autorregresiva, así que la
+    longitud de la respuesta es literalmente el número de veces que se ejecuta el modelo.</p>
+    <p>Por eso la latencia depende sobre todo de <em>cuánto</em> se genera, y por eso los
+    tokens de salida suelen costar más que los de entrada: la entrada se procesa de una
+    vez, la salida token a token.</p></l-why>
+  </l-quiz>
+
+  <h3 style="margin-top:2.5rem">Con <code>l-option</code>, se convierte en tramos</h3>
+  <l-quiz mode="estimate" answer="c">
+    <l-prompt>A 50 tokens por segundo, ¿cuánto tarda en salir una respuesta de 500 tokens?</l-prompt>
+    <l-option value="a">Menos de 1 segundo</l-option>
+    <l-option value="b">Entre 1 y 5 segundos</l-option>
+    <l-option value="c">Alrededor de 10 segundos</l-option>
+    <l-option value="d">Más de un minuto</l-option>
+    <l-miss for="b">Ese es el orden de magnitud del <em>primer</em> token, no el de la
+    respuesta completa.</l-miss>
+    <l-why><p>500 ÷ 50 = 10 segundos. Con streaming el usuario ve la primera palabra casi
+    enseguida, y esa es la razón de que el streaming importe tanto: la espera total no
+    baja, pero la espera <em>percibida</em> sí.</p></l-why>
+  </l-quiz>
+</l-section>
+
+<l-section id="explain" title="explain · producir la explicación, no reconocerla"
+           goal="El nivel más exigente: generar el razonamiento">
+  <l-quiz mode="explain">
+    <l-prompt>Escribes una sola frase en el mensaje número 30 de una conversación, y esa
+    llamada cuesta mucho más que la primera. Explica por qué.</l-prompt>
+    <l-key match="histori|conversaci|anterior|todo|entero|complet">Se reenvía la conversación entera en cada llamada</l-key>
+    <l-key match="no recuerda|sin estado|stateless|memoria">El modelo no guarda estado entre llamadas</l-key>
+    <l-key match="token de entrada|se cobra|se paga|por token|coste">Se paga por token de entrada, y ese bloque crece</l-key>
+    <l-key match="crece|acumul|cada turno|linealmen">Crece con cada turno, aunque tu mensaje sea corto</l-key>
+    <l-reference><p>Una API de modelo no tiene memoria entre llamadas. Lo que parece que
+    «recuerda» es el historial completo viajando otra vez en cada petición, así que en el
+    turno 30 estás pagando por los 29 anteriores más el tuyo. Tu frase añade unos pocos
+    tokens; el resto de la factura ya estaba ahí.</p>
+    <p>De ahí salen las técnicas habituales: resumir los turnos antiguos, recortar por
+    ventana, o cachear el prefijo estable para que no se cobre entero cada vez.</p></l-reference>
+  </l-quiz>
+</l-section>
+
+<!-- ═══ CONTRASTE Y RAMAS ══════════════════════════════════════ -->
+<l-section id="contraste" eyebrow="Aprendizaje" title="l-contrast suelto"
+           goal="El movimiento que convierte un error en una lección">
+  <p>Los quizzes de tipo <code>prediction</code> generan un contraste solos. También se
+  puede poner a mano después de una simulación, un benchmark o una decisión de diseño:</p>
+  <l-contrast expected-label="Lo que sugiere la factura" actual-label="Lo que dice el perfilado">
+    <l-expected>«El modelo es caro.»</l-expected>
+    <l-actual>El 78 % del gasto son tokens de entrada, y la mitad de esa entrada es un
+    prompt de sistema que se reenvía intacto en cada turno.</l-actual>
+    <l-why><p>Dos arreglos muy distintos. «El modelo es caro» lleva a cambiar de modelo;
+    el dato real lleva a cachear el prefijo. Solo uno de los dos toca la causa.</p></l-why>
+  </l-contrast>
+</l-section>
+
+<l-section id="branch" title="l-branch" goal="Explicaciones que se bifurcan según el lector">
+  <l-branch question="¿Cuál es tu problema ahora mismo?"
+            rejoin="Vengas por donde vengas, el checkpoint de abajo es el mismo.">
+    <l-path name="coste" label="Me está costando demasiado">
+      <p><b>Coste.</b> Mira primero el reparto entrada/salida. Si la entrada domina, el
+      arreglo suele ser cachear el prefijo estable y recortar el contexto, no cambiar de
+      modelo. Si domina la salida, el arreglo es pedir respuestas más cortas.</p>
+    </l-path>
+    <l-path name="latencia" label="Va lento">
+      <p><b>Latencia.</b> Separa el tiempo hasta el primer token del tiempo entre tokens.
+      El primero depende del tamaño del prompt; el segundo, de cuánto generas. Se arreglan
+      con cosas distintas, y el streaming solo mejora la percepción del primero.</p>
+    </l-path>
+    <l-path name="calidad" label="Responde mal">
+      <p><b>Calidad.</b> Antes de tocar el prompt, comprueba si tus ejemplos contradicen
+      tus instrucciones — es el fallo más común y el más invisible. Después, si el
+      contexto es largo, comprueba si lo relevante se está diluyendo entre lo que no lo es.</p>
+    </l-path>
+  </l-branch>
+</l-section>
+
+<l-section id="consolidar" title="" goal="Cerrar la galería">
+  <l-checkpoint title="Si has ido respondiendo, deberías poder explicar">
+    <l-can>Por qué doblar el contexto no dobla el coste de atención</l-can>
+    <l-can>Qué produce el modelo exactamente en cada paso</l-can>
+    <l-can>Qué guarda la caché de claves y valores, y por qué el primer token tarda más</l-can>
+    <l-can>Por qué un ejemplo puede derrotar a una instrucción</l-can>
+    <l-can>Por qué el turno 30 cuesta más que el primero aunque escribas menos</l-can>
+  </l-checkpoint>
+</l-section>
+
+</scroll-story>
+
+<l-finish title="Fin del catálogo">
+  <l-next><p>Esta página existe para mirar los componentes juntos, no como ejemplo de
+  buena lección: veinte primitivas y once comprobaciones en una sola página es
+  exactamente lo que la skill te dice que <em>no</em> hagas. Para ver el formato bien
+  usado, mira <code>examples/cache.html</code> — cinco primitivas, un argumento.</p>
+  <p>El contrato de marcado de cada pieza está en <code>references/primitives.md</code>,
+  y las siete mecánicas en <code>references/quiz-modes.md</code>.</p></l-next>
+</l-finish>
+
+</div>

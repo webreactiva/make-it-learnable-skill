@@ -1,0 +1,203 @@
+<img src="skills/make-it-learnable/assets/logo.svg" alt="" width="96" height="96">
+
+# make-it-learnable
+
+**Turn any source material into a self-contained interactive lesson.** Point it at a
+document, a repo, a function, a paper, a URL or a rough explanation, and it produces
+one HTML file: a scroll-driven narrative over a diagram that transforms, checks that
+make the reader commit to an answer before the reveal, and an ending that tells them
+what to go back over.
+
+No build step, no dependencies, no network. Open the file, mail it, put it on a USB
+stick. It still works in five years.
+
+The format is an [explorable explanation](https://en.wikipedia.org/wiki/Explorable_explanation)
+— an interactive model of a concept carried by prose, where the reader states an
+expectation and then watches reality disagree. It is not a slide deck with a quiz
+bolted on the end.
+
+---
+
+## Install
+
+The packaged skill lives in `skills/make-it-learnable/`. Symlink that directory where
+your agent looks for skills:
+
+```bash
+git clone https://github.com/<you>/make-it-learnable.git
+ln -s "$(pwd)/make-it-learnable/skills/make-it-learnable" ~/.claude/skills/
+```
+
+Or `./package-skill.sh` to get a `make-it-learnable.zip` you can hand to anyone.
+
+Requirements: **Python 3** (standard library only) and a browser with CSS `:has()` —
+Chrome 105+, Safari 15.4+, Firefox 121+. The runtime is custom elements and plain CSS;
+there is nothing to compile and nothing to `npm install`.
+
+## Use it
+
+```
+/make-it-learnable docs/architecture.md
+/make-it-learnable https://en.wikipedia.org/wiki/Explorable_explanation
+/make-it-learnable src/scheduler.ts — for a new backend hire
+```
+
+Give it a file, a repo, a URL, or a topic plus who it is for. With no argument it
+asks — it has no default subject and guessing one wastes a whole build.
+
+The agent then reads the material, decides which primitives fit it, writes the lesson
+body, and builds it. Content comes out in your language; the runtime's own chrome
+(buttons, verdicts, the ending card) stays in English.
+
+## What it builds
+
+One `.html` file, roughly 110 KB, theme-aware, keyboard-accessible and printable.
+
+A lesson is made of **sections**, each with a stated goal, wrapped in a
+**scroll-story** that turns scroll position into narrative time. A **stage** holds one
+persistent representation — a diagram, a trace, a piece of state — and scenes
+transform it as the reader moves, rather than swapping in a new picture each time.
+**Checks** interrupt at the right moments, and a **finish** card closes the lesson
+with what to revisit.
+
+### The vocabulary
+
+Twenty primitives, grouped by what they do — plus the `scroll-story` runtime they
+live inside (with its `l-scene` beats) and the `l-finish` card that closes a lesson.
+A good lesson uses **four to seven** of them: picking the right handful is the main
+act of judgement, and using more is noise, not thoroughness.
+
+| Family | Primitives |
+|---|---|
+| Structure | `l-section` · `l-stack` · `l-split` · `l-stage` |
+| Narrative | `l-stepper` · `l-branch` — inside the `scroll-story` runtime and its `l-scene` beats |
+| Attention | `l-focus` · `l-reveal` · `l-layer` · `l-anatomy` · `l-compare` |
+| Behaviour | `l-transform` · `l-flow` · `l-trace` · `l-state` |
+| Experiment | `l-whatif` (panel or reactive-document) · `l-sandbox` |
+| Learning | `l-quiz` · `l-contrast` · `l-checkpoint` — and `l-finish` to end |
+
+Full markup contract: [`references/primitives.md`](skills/make-it-learnable/references/primitives.md).
+
+### The checks
+
+Seven mechanics. Only the reader's *action* changes; the shell around it —
+situation → action → evaluation → feedback — stays the same.
+
+| Mechanic | What it tells you |
+|---|---|
+| `prediction` | Does their mental model produce the right output? |
+| `spot` | Can they recognise the concept in real material? |
+| `classify` | Can they tell two confusable things apart? |
+| `arrange` | Do they understand the process? (add `low`/`high` for a ranking) |
+| `explain` | Can they *generate* the explanation, not just recognise it? |
+| `estimate` | Is their sense of scale right? |
+| `choose` | Is it genuinely a choice between named options? |
+
+Add `confidence` and the reader rates how sure they were. The valuable case is
+**confident and wrong** — a belief they actively trust that does not hold — and the
+ending calls it out by name. Details: [`references/quiz-modes.md`](skills/make-it-learnable/references/quiz-modes.md).
+
+## Authoring by hand
+
+You do not need the agent. Write a body fragment and build it:
+
+```html
+<div class="ml-shell">
+  <header class="ml-hero">
+    <p class="ml-eyebrow">Backend fundamentals · 12 min</p>
+    <h1>Why a cache sits in front of your database</h1>
+  </header>
+
+  <scroll-story>
+    <l-section id="predict" title="Before we fix it" goal="Commit to a number first">
+      <l-quiz mode="prediction" answer="b" confidence>
+        <l-prompt>The same page is requested 1,000 times. How many DB queries?</l-prompt>
+        <l-option value="a">Once — databases cache repeated queries</l-option>
+        <l-option value="b">1,000 times</l-option>
+        <l-actual>1,000 times.</l-actual>
+        <l-miss for="a">Databases do keep pages in memory, so the query gets faster.
+        But "faster query" is not "no query".</l-miss>
+        <l-why><p>The database has no idea the answer is about to be asked for
+        again. That is the gap a cache fills — not speed, <b>repetition</b>.</p></l-why>
+      </l-quiz>
+    </l-section>
+  </scroll-story>
+
+  <l-finish title="That's caching, honestly"></l-finish>
+</div>
+```
+
+```bash
+python3 skills/make-it-learnable/scripts/build_lesson.py lesson-body.html -o lesson.html \
+  --title "…" --desc "…" --lang en
+```
+
+The build script refuses to ship broken cross-references — a `focus` target that does
+not exist, a quiz with no answer, a `l-out` using an undeclared variable — because
+those fail *silently* in a browser: the page still renders, it just stops teaching.
+Warnings (a check with no `<l-why>`, a section with no goal) are advice worth taking.
+
+Check without building:
+
+```bash
+python3 skills/make-it-learnable/scripts/build_lesson.py lesson-body.html --check-only
+```
+
+## Examples
+
+Built and browser-tested. Open the `.html` directly.
+
+| Lesson | Source shape | Primitives it reaches for |
+|---|---|---|
+| [`examples/cache.html`](examples/cache.html) | A system + a quantitative relationship | `l-flow`, `l-trace`, `l-state`, `l-whatif` both forms |
+| [`examples/valladolid.html`](examples/valladolid.html) | Non-technical history | `l-anatomy`, `l-transform`, `l-contrast` — no simulation, because there is no honest model |
+| [`examples/teach.html`](examples/teach.html) | A file format / architecture | `l-anatomy`, `l-compare`, `l-contrast` |
+| [`examples/gallery.html`](examples/gallery.html) | **Not a lesson** — the whole vocabulary in one page, filled with LLM content, for looking things up | all 20, all 7 check mechanics, every variant |
+
+Each has its readable source in `skills/make-it-learnable/examples/*-body.html`.
+
+## Project layout
+
+```
+skills/make-it-learnable/      the packaged skill — the only thing distributed
+  SKILL.md                     workflow + which primitives fit which material
+  references/authoring.md      how to go from arbitrary source to a lesson
+  references/primitives.md     markup contract for all 20 primitives
+  references/quiz-modes.md     the 7 check mechanics
+  assets/runtime.{css,js}      the runtime — never edited when authoring a lesson
+  assets/logo.svg              the mark
+  assets/favicon.svg           the mark at 32, inlined into every build
+  scripts/build_lesson.py      assembles and validates
+  examples/*-body.html         readable sources the authoring agent reads
+.claude/skills/make-it-learnable -> symlink to skills/make-it-learnable (local use)
+package-skill.sh               builds make-it-learnable.zip for distribution
+examples/                      built lessons, open them in a browser
+```
+
+## Design notes
+
+- **Palette: Fiery Ocean**, assigned by role rather than by looks. It ships two reds,
+  and a lesson cannot afford for *highlighted* and *wrong* to be the same colour — so
+  deep crimson is identity, ocean blue is interaction, bright red means incorrect and
+  nothing else, and green means correct. Every text pair is contrast-checked.
+- **No webfonts.** A system stack that lands on a real face per platform (Avenir Next,
+  Segoe UI Variable, Ubuntu, Roboto) and never bottoms out on Arial. A Google Fonts
+  link would break the one promise the format makes.
+- **Points are a mirror, not the point.** The scoring pays for committing to an answer
+  before the reveal, being honest about confidence, and touching the model — never for
+  clicking around. Explorable explanations are normally defined *against* gamification;
+  this keeps a light layer only because it makes the confident-and-wrong case visible.
+  Score is in-memory: a reload restarts the lesson, which is what a reload should mean.
+
+## Limits
+
+- `l-sandbox` is blocked by browsers on `file://`. Serve over HTTP
+  (`python3 -m http.server`) to demo it, or leave it out of a file people open locally.
+- The score does not persist. There is no back end, and there is not going to be one.
+- A lesson is only as honest as its source. The skill's hardest rule is *build from the
+  source, not from memory* — a lesson asserts things confidently and gives the reader
+  no way to check, so a plausible fabrication does more damage here than in prose.
+
+---
+
+Created with 🧡 by [webreactiva.com](https://webreactiva.com)

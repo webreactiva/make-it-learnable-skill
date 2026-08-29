@@ -1,0 +1,275 @@
+<div class="ml-shell">
+
+<header class="ml-hero">
+  <p class="ml-eyebrow">Backend fundamentals · 12 min</p>
+  <h1>Why a cache sits in front of your database</h1>
+  <p class="ml-lede">Not "because it's faster". By the end you should be able to say what it is faster
+  <em>than</em>, when it is slower, and what breaks when it is wrong.</p>
+</header>
+
+<scroll-story>
+
+<l-section id="the-cost" title="Every read costs a round trip" goal="See where the time in a request actually goes"
+           eyebrow="The problem">
+  <div class="ml-story-grid">
+    <div class="ml-story-stage">
+      <l-stage id="arch" label="One product page request" sticky>
+        <l-flow cols="3">
+          <l-node id="browser" data-part="browser">Browser<small>the reader</small></l-node>
+          <l-node id="api" data-part="api">API<small>your server</small></l-node>
+          <l-node id="db" data-part="db">Database<small>disk + query planner</small></l-node>
+          <l-node id="redis" data-part="redis" data-reveal="later" row="2" col="2">Redis<small>in memory</small></l-node>
+          <l-edge from="browser" to="api" label="GET /product/42"></l-edge>
+          <l-edge from="api" to="db" label="SELECT …"></l-edge>
+          <l-edge from="api" to="redis" label="GET product:42"></l-edge>
+          <l-edge from="redis" to="db" label="miss"></l-edge>
+        </l-flow>
+      </l-stage>
+    </div>
+
+    <div>
+      <l-scene name="browser" stage="arch" focus="browser">
+        <p>Someone opens a product page. From here everything downstream is invisible to them —
+        they only experience the total.</p>
+      </l-scene>
+
+      <l-scene name="api" stage="arch" focus="api">
+        <p>Your API receives it. Parsing the request, checking auth, building the response: fast.
+        Single-digit milliseconds. This is almost never the problem.</p>
+      </l-scene>
+
+      <l-scene name="db" stage="arch" focus="db">
+        <p>Then it asks the database. The query itself may be quick, but the round trip is not free:
+        connection, network hop, query planning, reading pages that may not be in memory.</p>
+        <p>Do that on every request, for every visitor, for a row that changed last Tuesday.</p>
+      </l-scene>
+    </div>
+  </div>
+</l-section>
+
+<l-section id="predict" title="Before we fix it" goal="Commit to a number before seeing the real one">
+  <l-quiz mode="prediction" answer="b" confidence>
+    <l-prompt>An identical product page is requested 1,000 times in a minute and nothing about it changes.
+    How many times does the database run that same query?</l-prompt>
+    <l-option value="a">Once — databases cache repeated queries</l-option>
+    <l-option value="b">1,000 times</l-option>
+    <l-option value="c">Roughly 10 — the connection pool batches them</l-option>
+    <l-actual>1,000 times.</l-actual>
+    <l-miss for="a">Databases <em>do</em> keep pages in memory, and the query will get faster after the
+    first run. But "faster query" is not "no query": you still pay the connection, the network hop, the
+    planner and the serialisation, 1,000 times.</l-miss>
+    <l-miss for="c">Connection pools reuse connections; they do not merge queries. Each request still
+    issues its own.</l-miss>
+    <l-why><p>The database has no idea that the answer it just computed is about to be asked for again.
+    That is the gap a cache fills — not speed, <b>repetition</b>.</p></l-why>
+  </l-quiz>
+</l-section>
+
+<l-section id="the-fix" title="Put the answer somewhere closer" goal="Understand what changes when Redis is added">
+  <p>A cache is a small, fast store that remembers answers you already computed. Reading from memory over
+  a local network is roughly two orders of magnitude cheaper than a disk-backed query.</p>
+
+  <l-whatif inline>
+    <p>If a product page takes <l-var name="db" min="10" max="300" value="90" unit="ms" label="database latency"></l-var>
+    to build from the database and <l-var name="cache" min="1" max="20" value="2" unit="ms" label="cache latency"></l-var>
+    from Redis, then at a hit rate of <l-var name="hit" min="0" max="100" value="80" unit="%" label="hit rate"></l-var>
+    the average read costs <l-out name="avg" expr="hit/100*cache + (1-hit/100)*db" unit="ms"></l-out>
+    — and you have taken <l-out name="load" expr="hit" unit="%"></l-out> of the traffic off the database entirely.</p>
+    <p class="ml-scrub-hint">Drag any orange number, or focus it and use the arrow keys.</p>
+  </l-whatif>
+
+  <p>Drag the hit rate down to 20% and watch the average barely move. That is the thing people get wrong
+  about caching: a cache with a poor hit rate is not a small win, it is nearly no win at all — while still
+  costing you a whole new source of stale data.</p>
+</l-section>
+
+<l-section id="miss" title="The path nobody draws" goal="Follow a cache miss step by step">
+  <l-split sticky>
+    <div>
+      <p>A hit is boring. Every interesting bug in a caching layer lives on the <b>miss</b> path, because
+      that is where two systems have to agree about what is true.</p>
+      <l-trace>
+        <l-tstep detail="GET /product/42 arrives. Nothing has been read yet.">request received</l-tstep>
+        <l-tstep detail="GET product:42 → (nil). This is the miss. Costs ~1ms to find out.">ask Redis</l-tstep>
+        <l-tstep detail="SELECT * FROM products WHERE id = 42 → 1 row, ~90ms.">fall through to the database</l-tstep>
+        <l-tstep detail="SETEX product:42 300 {...}. The TTL is the decision that matters: it is how long you are willing to serve a wrong answer.">write it back with a TTL</l-tstep>
+        <l-tstep detail="200 OK. Total ~92ms — slower than no cache at all for this one request.">respond</l-tstep>
+      </l-trace>
+      <p style="font-size:.92rem;color:var(--ml-muted)">Note step 5: on a miss the cache made the request
+      <em>slower</em>. Caching is a bet that misses are rare.</p>
+    </div>
+    <l-stage label="Where the time goes">
+      <l-state name="request timing">
+        <l-field key="cache lookup" value="1 ms"></l-field>
+        <l-field key="db query" value="90 ms"></l-field>
+        <l-field key="cache write" value="1 ms"></l-field>
+        <l-field key="total" value="92 ms"></l-field>
+      </l-state>
+    </l-stage>
+  </l-split>
+</l-section>
+
+<l-section id="whats-cacheable" title="What can you actually cache?" goal="Separate data by how much staleness it tolerates">
+  <l-quiz mode="classify">
+    <l-prompt>Sort these by whether a few minutes of staleness would be acceptable.</l-prompt>
+    <l-bucket name="Safe to cache">
+      <l-item>product description</l-item>
+      <l-item>country list</l-item>
+      <l-item>public article body</l-item>
+    </l-bucket>
+    <l-bucket name="Cache carefully">
+      <l-item>stock count</l-item>
+      <l-item>current price</l-item>
+    </l-bucket>
+    <l-bucket name="Do not cache">
+      <l-item>shopping basket</l-item>
+      <l-item>auth session</l-item>
+    </l-bucket>
+    <l-why><p>The question is never "is this slow to fetch". It is <b>"what happens if I serve a version
+    of this from five minutes ago"</b>. A stale country list is nothing. A stale stock count sells you
+    something that does not exist. A stale basket belongs to someone else.</p></l-why>
+  </l-quiz>
+</l-section>
+
+<l-section id="the-bug" title="A cache that quietly lies" goal="Recognise a stale-write bug in real code">
+  <l-quiz mode="spot" answer="r3" confidence>
+    <l-prompt>This updates a product. One line makes the cache serve wrong data for the next five minutes.
+    Which one?</l-prompt>
+    <l-situation>
+      <div class="ml-spot">
+<span class="ml-spot-line">async function updateProduct(id, data) {</span>
+<span class="ml-spot-line">  <l-region id="r1">const product = await db.products.update(id, data)</l-region></span>
+<span class="ml-spot-line">  <l-region id="r2">await redis.setex(`product:${id}`, 300, JSON.stringify(product))</l-region></span>
+<span class="ml-spot-line">  <l-region id="r3">await search.reindex(product)   // may throw</l-region></span>
+<span class="ml-spot-line">  return product</span>
+<span class="ml-spot-line">}</span>
+      </div>
+    </l-situation>
+    <l-why><p>Nothing is wrong with the write order — the database changes first, then the cache. The
+    problem is that <code>reindex</code> can throw <em>after</em> both have been written, so the caller
+    sees a failure and retries or reports an error, while the cache is already holding the new value for
+    300 seconds. Your failure path and your cache now disagree about whether the update happened.</p>
+    <p>The fix is not reordering. It is deciding whether the cache write belongs inside the same failure
+    boundary as everything else — usually by invalidating rather than writing through:
+    <code>await redis.del(`product:${id}`)</code>.</p></l-why>
+  </l-quiz>
+</l-section>
+
+<l-section id="order" title="The read path, in order" goal="Reconstruct the cache-aside sequence yourself">
+  <l-quiz mode="arrange">
+    <l-prompt>Put a cache-aside read back in order.</l-prompt>
+    <l-item>request arrives at the API</l-item>
+    <l-item>look for the key in the cache</l-item>
+    <l-item>on a miss, query the database</l-item>
+    <l-item>write the result back with a TTL</l-item>
+    <l-item>return the response</l-item>
+    <l-why><p>The name says it: the cache sits <em>aside</em> the database, and the application is what
+    knows about both. Nothing in this sequence happens automatically — which is exactly why the
+    invalidation is your problem and not Redis's.</p></l-why>
+  </l-quiz>
+</l-section>
+
+<l-section id="tradeoff" title="What a cache costs" goal="Weigh the cache against its real price">
+  <l-compare label="">
+    <l-column>Straight to the database</l-column>
+    <l-column>Cache in front</l-column>
+    <l-criterion name="Typical read">
+      <l-cell>~90 ms, every time</l-cell>
+      <l-cell>~2 ms on a hit, ~92 ms on a miss</l-cell>
+    </l-criterion>
+    <l-criterion name="Database load">
+      <l-cell>1 query per request</l-cell>
+      <l-cell>1 query per miss</l-cell>
+    </l-criterion>
+    <l-criterion name="Correctness">
+      <l-cell>Always current</l-cell>
+      <l-cell>Current within the TTL, at best</l-cell>
+    </l-criterion>
+    <l-criterion name="Things that can break">
+      <l-cell>The database</l-cell>
+      <l-cell>The database, the cache, and the agreement between them</l-cell>
+    </l-criterion>
+    <l-criterion name="Cost of being wrong">
+      <l-cell>Slow</l-cell>
+      <l-cell>Wrong, silently, for the length of the TTL</l-cell>
+    </l-criterion>
+  </l-compare>
+
+  <p style="margin-top:1.5rem">Move the sliders until the cache stops being worth it. It happens sooner
+  than most people expect.</p>
+
+  <l-whatif>
+    <l-var name="hit" type="range" min="0" max="100" value="85" step="5" unit="%" label="Hit rate"></l-var>
+    <l-var name="dbms" type="range" min="5" max="300" value="90" step="5" unit="ms" label="Database latency"></l-var>
+    <l-var name="ttl" type="range" min="1" max="600" value="300" step="1" unit="s" label="TTL"></l-var>
+    <l-out name="avg" label="Average read" expr="hit/100*2 + (1-hit/100)*(dbms+3)" unit=" ms" good="low" threshold="30"></l-out>
+    <l-out name="saved" label="Database load removed" expr="hit" unit=" %" good="high" threshold="70"></l-out>
+    <l-out name="stale" label="Worst-case staleness" expr="ttl" unit=" s" good="low" threshold="120"></l-out>
+  </l-whatif>
+</l-section>
+
+<l-section id="estimate" title="A number to commit to" goal="Make your quantitative intuition explicit">
+  <l-quiz mode="estimate" min="0" max="200" step="1" unit=" ms" actual="14" tolerance="0.6" confidence>
+    <l-prompt>A cache is doing its job at a 90% hit rate. Hits cost 2 ms, misses cost 122 ms.
+    What is the <em>average</em> read latency?</l-prompt>
+    <l-why><p>0.9 × 2 + 0.1 × 122 = <b>14 ms</b>. The interesting part is that one request in ten is still
+    slow — averages hide tails. If you only ever look at the mean, a cache makes a system look healthier
+    than the slowest 10% of your users are experiencing. Watch p99, not the average.</p></l-why>
+  </l-quiz>
+</l-section>
+
+<l-section id="explain" title="Say it in your own words" goal="Produce the explanation, not recognise it">
+  <l-quiz mode="explain">
+    <l-prompt>A colleague says: "we should cache everything, caching always makes things faster."
+    Write the shortest reply that would actually change their mind.</l-prompt>
+    <l-key match="miss|hit rate|hit.?ratio">A low hit rate means you pay the cost and get almost none of the benefit</l-key>
+    <l-key match="stale|invalidat|out.?of.?date|wrong">Cached data goes stale — you trade correctness for latency</l-key>
+    <l-key match="slower|overhead|extra|adds">On a miss the request is slower than it would have been</l-key>
+    <l-key match="complex|another|two systems|fail">You add a second system that can fail or disagree with the first</l-key>
+    <l-reference><p>"Caching only helps when the same answer is asked for repeatedly. If the hit rate is
+    low, every request pays the lookup and still goes to the database — you've made it slower and added a
+    second system that can disagree with the first. The real question isn't speed, it's how long you're
+    willing to serve an answer that's out of date."</p></l-reference>
+  </l-quiz>
+</l-section>
+
+<l-section id="depth" title="Go deeper where you need it" goal="Choose the angle that matters for your work">
+  <l-branch question="Which of these is actually your problem right now?" rejoin="Either way, the checkpoint below is the same.">
+    <l-path name="invalidation" label="My data goes stale">
+      <p><b>Invalidation.</b> Two workable strategies, and they are not interchangeable. <b>TTL</b>: accept
+      staleness up to a fixed window; simple, and wrong for a bounded, predictable time. <b>Explicit
+      invalidation</b>: delete the key whenever the underlying row changes; correct, and it fails the moment
+      one write path forgets. Most teams start with TTL and add invalidation on the two or three keys where
+      staleness actually costs money.</p>
+    </l-path>
+    <l-path name="hitrate" label="My hit rate is bad">
+      <p><b>Key design.</b> A poor hit rate is almost always keys that are too specific — a key including a
+      user id, a timestamp, or a full query string means nearly every request is unique and the cache is
+      just overhead. Cache the shared part, and compose the personal part on top of it.</p>
+    </l-path>
+    <l-path name="stampede" label="It falls over under load">
+      <p><b>Stampede.</b> When a popular key expires, every in-flight request misses at once and they all hit
+      the database in the same millisecond — often harder than having no cache at all. The fixes are a lock
+      so one request refills while the others wait, or refreshing slightly before expiry.</p>
+    </l-path>
+  </l-branch>
+</l-section>
+
+<l-section id="consolidate" title="" goal="Confirm the block before moving on">
+  <l-checkpoint title="Before you move on, you should be able to explain">
+    <l-can>What a cache is faster <em>than</em>, and why the comparison is about repetition rather than speed</l-can>
+    <l-can>Why a low hit rate makes a cache nearly worthless rather than slightly useful</l-can>
+    <l-can>What a TTL really is: how long you accept serving a wrong answer</l-can>
+    <l-can>Why a cache miss is slower than having no cache</l-can>
+    <l-can>Which of your own data would be dangerous to cache, and why</l-can>
+  </l-checkpoint>
+</l-section>
+
+</scroll-story>
+
+<l-finish title="That's caching, honestly">
+  <l-next><p>The natural next step is <b>invalidation strategies</b> — the half of the problem this lesson
+  deliberately kept at arm's length. After that, cache stampedes and read-through vs cache-aside.</p></l-next>
+</l-finish>
+
+</div>
