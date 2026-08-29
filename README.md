@@ -2,6 +2,8 @@
 
 # make-it-learnable
 
+*[Léelo en español](README.es.md)*
+
 **Turn any source material into a self-contained interactive lesson.** Point it at a
 document, a repo, a function, a paper, a URL or a rough explanation, and it produces
 one HTML file: a scroll-driven narrative over a diagram that transforms, checks that
@@ -75,20 +77,20 @@ English.
 A stage that stays put while the prose moves — the diagram transforms instead of being
 replaced:
 
-![A scroll-driven scene: a Browser → API → Database diagram on the left with the Database node highlighted, and the narration beside it](assets/scroll-story.png)
+![A scroll-driven scene: the Prompt → Tokenizador → Modelo → Logits pipeline on the left with the Logits node highlighted, and the narration beside it](assets/scroll-story.png)
+
+The reader can also drive the same stage by hand, step by step, and watch the state
+change underneath:
+
+![A stepper on step 2 of 3 driving a stage, with a runtime state table showing input tokens, generated tokens and KV cache positions](assets/stepper-stage.png)
 
 Checks that make the reader commit *before* the reveal, confidence included — so
 "confident and wrong" becomes visible instead of invisible:
 
-![A prediction check: the wrong option marked in red, the right one in green, a confidence slider, and a You expected / What actually happens comparison](assets/check.png)
+![A prediction check after answering: the chosen option in red, the correct one in green, a confidence slider, a You expected / What actually happens comparison, and a +25 you committed to an answer badge](assets/check.png)
 
-An ending that scores the run and names what to go back over:
-
-![The end-of-lesson card: 33% correct, 350 points, a Committed badge, and a Worth revisiting list of the questions that were missed](assets/finish.png)
-
-It follows the language of the source, not the language of the skill:
-
-![A Spanish lesson about Valladolid's Plaza Mayor, with an anatomy component breaking the reconstruction into five decisions](assets/any-language.png)
+That is one of seven mechanics. Ordering a process, spotting a concept in real code and
+estimating a magnitude are different questions, and they fail differently.
 
 ## What it builds
 
@@ -186,16 +188,13 @@ python3 skills/make-it-learnable/scripts/build_lesson.py lesson-body.html --chec
 
 ## Examples
 
-Built and browser-tested. Open the `.html` directly.
-
-| Lesson | Source shape | Primitives it reaches for |
-|---|---|---|
-| [`examples/cache.html`](examples/cache.html) | A system + a quantitative relationship | `l-flow`, `l-trace`, `l-state`, `l-whatif` both forms |
-| [`examples/valladolid.html`](examples/valladolid.html) | Non-technical history | `l-anatomy`, `l-transform`, `l-contrast` — no simulation, because there is no honest model |
-| [`examples/teach.html`](examples/teach.html) | A file format / architecture | `l-anatomy`, `l-compare`, `l-contrast` |
-| [`examples/gallery.html`](examples/gallery.html) | **Not a lesson** — the whole vocabulary in one page, filled with LLM content, for looking things up | all 20, all 7 check mechanics, every variant |
-
-Each has its readable source in `skills/make-it-learnable/examples/*-body.html`.
+[`examples/gallery.html`](examples/gallery.html) — **not a lesson**, the whole
+vocabulary in one page: all 20 primitives, all 7 check mechanics, every variant,
+filled with LLM content so the demos say something real. Open it directly and use it
+to look things up. Its readable source is
+[`skills/make-it-learnable/examples/gallery-body.html`](skills/make-it-learnable/examples/gallery-body.html);
+the other `*-body.html` files next to it are full lessons the authoring agent reads
+as models.
 
 ## Project layout
 
