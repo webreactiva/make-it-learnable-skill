@@ -20,15 +20,27 @@ bolted on the end.
 
 ## Install
 
-The packaged skill lives in `skills/make-it-learnable/`. Symlink that directory where
-your agent looks for skills:
+**The easy way.** Grab `make-it-learnable.zip` and say it to your agent in plain
+language, with the file attached:
 
-```bash
-git clone https://github.com/<you>/make-it-learnable.git
-ln -s "$(pwd)/make-it-learnable/skills/make-it-learnable" ~/.claude/skills/
+```
+Instala esta skill para poder usarla @make-it-learnable.zip
 ```
 
-Or `./package-skill.sh` to get a `make-it-learnable.zip` you can hand to anyone.
+```
+Install this skill so I can use it @make-it-learnable.zip
+```
+
+The agent unzips it into its skills directory (`~/.claude/skills/` for Claude Code)
+and it is available from that point on. Nothing else to configure.
+
+If you cloned this repo instead, build the zip yourself with `./package-skill.sh`, or
+skip it and symlink the skill directly:
+
+```bash
+git clone https://github.com/webreactiva/make-it-learnable-skill.git
+ln -s "$(pwd)/make-it-learnable-skill/skills/make-it-learnable" ~/.claude/skills/
+```
 
 Requirements: **Python 3** (standard library only) and a browser with CSS `:has()` —
 Chrome 105+, Safari 15.4+, Firefox 121+. The runtime is custom elements and plain CSS;
@@ -36,18 +48,47 @@ there is nothing to compile and nothing to `npm install`.
 
 ## Use it
 
+Type `/make-it-learnable` — no space in the name — and after it, whatever you want
+turned into a lesson:
+
 ```
-/make-it-learnable docs/architecture.md
 /make-it-learnable https://en.wikipedia.org/wiki/Explorable_explanation
+/make-it-learnable docs/architecture.md
 /make-it-learnable src/scheduler.ts — for a new backend hire
+/make-it-learnable this whole repo, for someone joining the team on Monday
+/make-it-learnable por qué el consenso Raft necesita un líder
 ```
 
-Give it a file, a repo, a URL, or a topic plus who it is for. With no argument it
-asks — it has no default subject and guessing one wastes a whole build.
+Anything goes in that slot: **a URL** (a Wikipedia article, a blog post, an RFC), **a
+file**, **a folder or the whole codebase**, **a paper or a transcript**, or just **a
+topic** described in words. Add who it is for and it will pitch the lesson at them.
+With no argument at all it asks — it has no default subject, and guessing one wastes a
+whole build.
 
 The agent then reads the material, decides which primitives fit it, writes the lesson
-body, and builds it. Content comes out in your language; the runtime's own chrome
-(buttons, verdicts, the ending card) stays in English.
+body, and builds it into a single `.html` file. Content comes out in the language of
+your source; the runtime's own chrome (buttons, verdicts, the ending card) stays in
+English.
+
+## What it looks like
+
+A stage that stays put while the prose moves — the diagram transforms instead of being
+replaced:
+
+![A scroll-driven scene: a Browser → API → Database diagram on the left with the Database node highlighted, and the narration beside it](assets/scroll-story.png)
+
+Checks that make the reader commit *before* the reveal, confidence included — so
+"confident and wrong" becomes visible instead of invisible:
+
+![A prediction check: the wrong option marked in red, the right one in green, a confidence slider, and a You expected / What actually happens comparison](assets/check.png)
+
+An ending that scores the run and names what to go back over:
+
+![The end-of-lesson card: 33% correct, 350 points, a Committed badge, and a Worth revisiting list of the questions that were missed](assets/finish.png)
+
+It follows the language of the source, not the language of the skill:
+
+![A Spanish lesson about Valladolid's Plaza Mayor, with an anatomy component breaking the reconstruction into five decisions](assets/any-language.png)
 
 ## What it builds
 
@@ -171,7 +212,9 @@ skills/make-it-learnable/      the packaged skill — the only thing distributed
   examples/*-body.html         readable sources the authoring agent reads
 .claude/skills/make-it-learnable -> symlink to skills/make-it-learnable (local use)
 package-skill.sh               builds make-it-learnable.zip for distribution
+make-it-learnable.zip          the artefact you hand to someone else (git-ignored)
 examples/                      built lessons, open them in a browser
+assets/                        the screenshots in this README
 ```
 
 ## Design notes
