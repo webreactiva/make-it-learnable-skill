@@ -22,27 +22,26 @@ bolted on the end.
 
 ## Install
 
-**The easy way.** Grab `make-it-learnable.zip` and say it to your agent in plain
-language, with the file attached:
+**Try it in one project first.** Attach `make-it-learnable.zip` and ask your agent, in
+plain language:
 
 ```
-Instala esta skill para poder usarla @make-it-learnable.zip
+Install this skill in this project so I can use it @make-it-learnable.zip
 ```
 
-```
-Install this skill so I can use it @make-it-learnable.zip
-```
+It unpacks the skill into the project — `.claude/skills/` for Claude Code,
+`.agents/skills/` for other agents — and it is there from the next prompt on.
 
-The agent unzips it into its skills directory (`~/.claude/skills/` for Claude Code)
-and it is available from that point on. Nothing else to configure.
-
-If you cloned this repo instead, build the zip yourself with `./package-skill.sh`, or
-skip it and symlink the skill directly:
+**Or do it yourself**, from the project root:
 
 ```bash
-git clone https://github.com/webreactiva/make-it-learnable-skill.git
-ln -s "$(pwd)/make-it-learnable-skill/skills/make-it-learnable" ~/.claude/skills/
+unzip make-it-learnable.zip -d .claude/skills/   # Claude Code
+unzip make-it-learnable.zip -d .agents/skills/   # other agents
 ```
+
+Once a couple of lessons have convinced you, install it for every project: copy that
+same `make-it-learnable/` folder into `~/.claude/skills/` (or `~/.agents/skills/`).
+From a clone of this repo the folder to copy is `skills/make-it-learnable/`.
 
 Requirements: **Python 3** (standard library only) and a browser with CSS `:has()` —
 Chrome 105+, Safari 15.4+, Firefox 121+. The runtime is custom elements and plain CSS;
@@ -209,7 +208,6 @@ skills/make-it-learnable/      the packaged skill — the only thing distributed
   assets/favicon.svg           the mark at 32, inlined into every build
   scripts/build_lesson.py      assembles and validates
   examples/*-body.html         readable sources the authoring agent reads
-.claude/skills/make-it-learnable -> symlink to skills/make-it-learnable (local use)
 package-skill.sh               builds make-it-learnable.zip for distribution
 make-it-learnable.zip          the artefact you hand to someone else (git-ignored)
 examples/                      built lessons, open them in a browser
