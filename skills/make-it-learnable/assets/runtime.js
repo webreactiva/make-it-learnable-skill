@@ -718,15 +718,20 @@ class Flow extends HTMLElement {
         const m = path.getPointAtLength(path.getTotalLength() / 2);
         const t = document.createElementNS(svg.namespaceURI, 'text');
         t.setAttribute('class', 'ml-edge-label');
-        t.setAttribute('x', m.x); t.setAttribute('y', m.y - 5);
+        t.setAttribute('x', m.x); t.setAttribute('y', m.y - 9);
         t.textContent = e.label; this._labels.append(t);
         // A short horizontal hop leaves less gap than the label needs, and the
         // label would sit right on top of the node's own text. Drop it clear
         // of both boxes instead of letting them collide.
         if (!vertical) {
           const gap = Math.abs(p2.x - p1.x);
-          if (t.getComputedTextLength() > gap - 6) t.setAttribute('y', Math.max(a.y + a.h, b.y + b.h) + 14);
+          if (t.getComputedTextLength() > gap - 10) t.setAttribute('y', Math.max(a.y + a.h, b.y + b.h) + 17);
         }
+        const bounds = t.getBBox(), bg = document.createElementNS(svg.namespaceURI, 'rect');
+        bg.setAttribute('class', 'ml-edge-label-bg'); bg.setAttribute('rx', '6');
+        bg.setAttribute('x', bounds.x - 7); bg.setAttribute('y', bounds.y - 4);
+        bg.setAttribute('width', bounds.width + 14); bg.setAttribute('height', bounds.height + 8);
+        this._labels.insertBefore(bg, t);
       }
     });
   }

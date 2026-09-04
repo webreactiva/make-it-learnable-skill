@@ -289,17 +289,23 @@ l-transform .ml-arrow{align-self:center; color:var(--ml-faint); font-size:1.1rem
 l-flow{display:block; position:relative; min-height:6rem; container-type:inline-size}
 l-flow .ml-flow-svg{position:absolute; inset:0; width:100%; height:100%; pointer-events:none; overflow:visible}
 l-flow .ml-flow-labels{z-index:2}
-l-flow .ml-flow-grid{display:grid; align-items:start; gap:clamp(1.1rem,5cqw,2.6rem) clamp(.8rem,4cqw,3rem); position:relative; z-index:1}
+l-flow .ml-flow-grid{display:grid; align-items:start; gap:clamp(1.1rem,5cqw,2.6rem) clamp(2rem,6cqw,3.5rem); position:relative; z-index:1}
 l-node{
-  display:block; border:1px solid transparent; border-radius:var(--ml-radius);
-  background:var(--ml-sunken); padding:.7rem .9rem; text-align:center; font-size:.88rem; font-weight:500;
+  display:grid; place-content:center; justify-self:center; width:100%; max-width:13rem; min-height:5.25rem;
+  border:1px solid var(--ml-line); border-radius:var(--ml-radius);
+  background:var(--ml-sunken); padding:.8rem 1rem; text-align:center; font-size:.9rem; font-weight:600;
   overflow-wrap:break-word; min-width:0;
 }
 l-node small{display:block; font-weight:400; color:var(--ml-muted); font-size:.76rem; margin-top:.15rem}
-l-flow path.ml-edge{stroke:var(--ml-line-strong); stroke-width:1.5; fill:none; marker-end:url(#ml-arrow)}
+l-flow path.ml-edge{stroke:var(--ml-line-strong); stroke-width:2; fill:none; marker-end:url(#ml-arrow)}
 l-flow path.ml-edge[data-on]{stroke:var(--ml-accent); stroke-width:2}
-l-flow text.ml-edge-label{fill:var(--ml-muted); font:400 11px var(--ml-sans); text-anchor:middle}
+l-flow .ml-edge-label-bg{fill:var(--ml-surface); stroke:var(--ml-line); stroke-width:1}
+l-flow text.ml-edge-label{fill:var(--ml-muted); font:600 10px var(--ml-sans); letter-spacing:.02em; text-anchor:middle}
 l-flow circle.ml-packet{fill:var(--ml-accent)}
+@container (max-width:560px){
+  l-flow .ml-flow-grid{grid-template-columns:1fr!important; gap:3.2rem}
+  l-flow l-node{grid-column:auto!important; grid-row:auto!important; max-width:18rem}
+}
 
 /* ── Trace ─────────────────────────────────────────────────────── */
 l-trace{display:block}
