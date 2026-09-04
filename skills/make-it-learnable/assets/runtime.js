@@ -352,6 +352,8 @@ class Stage extends HTMLElement {
     if (label) this.prepend(el('div', 'ml-stage-label', label));
     // Parts marked hidden-until-revealed start hidden.
     $$('[data-part][data-reveal="later"]', this).forEach(p => p.setAttribute('data-hidden', ''));
+    // …and so do state-dependent ones: no state set yet means nothing matches.
+    $$('[data-when]', this).forEach(p => p.setAttribute('data-hidden', ''));
   }
   part(name) { return this.querySelector(`[data-part="${CSS.escape(name)}"]`) || this.querySelector('#' + CSS.escape(name)); }
   /* effects: {state, focus:[], reveal:[], layers:[], step} — omitted keys are left alone. */
