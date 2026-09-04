@@ -11,3 +11,6 @@ make-it-learnable.zip
 
 .agents/
 .claude/
+
+# Lecciones de trabajo, ya excluidas del zip por package-skill.sh
+work/
