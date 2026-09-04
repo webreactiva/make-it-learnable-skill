@@ -444,8 +444,26 @@ class ScrollStory extends HTMLElement {
     let acc = [];
     scenes.forEach(s => { const fx = readFx(s); acc = [...new Set([...acc, ...(fx.reveal || [])])]; s._fx = { ...fx, reveal: acc.slice() }; });
 
+    /* An observer only fires on transitions. Acting on `isIntersecting`
+       alone means that when two adjacent scenes overlap the band, the one
+       already inside never re-fires — so scrolling back up skipped it and
+       the stage stayed on the scene below. Keep the live set instead and
+       pick the scene nearest the middle on every callback, including the
+       ones where a scene *leaves*. */
+    const live = new Set();
+    const mostCentred = () => {
+      const mid = innerHeight / 2;
+      let best = null, bestD = Infinity;
+      live.forEach(s => {
+        const r = s.getBoundingClientRect(), d = Math.abs((r.top + r.bottom) / 2 - mid);
+        if (d < bestD) { bestD = d; best = s; }
+      });
+      return best;
+    };
     const io = new IntersectionObserver(es => {
-      es.forEach(e => { if (e.isIntersecting) this.activate(e.target); });
+      es.forEach(e => e.isIntersecting ? live.add(e.target) : live.delete(e.target));
+      const s = mostCentred();
+      if (s) this.activate(s);
     }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
     scenes.forEach(s => io.observe(s));
 
