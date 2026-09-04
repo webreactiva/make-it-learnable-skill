@@ -256,8 +256,10 @@ efficiently. If you cannot defend the numbers, use `l-compare` instead.
 
 **Points are a mirror, not the point.** The scoring rewards committing to an
 answer, being calibrated about confidence, and touching the model — never
-clicking around. If the lesson would be worse with the HUD removed, fix the
-lesson. Explorable explanations are normally defined *against* gamification;
+clicking around. A run resets on reload; only the reader's personal best is kept,
+in `localStorage`, so re-opening the file offers a score to race. If the lesson
+would be worse with the HUD removed, fix the lesson. Explorable explanations are
+normally defined *against* gamification;
 this runtime keeps a light layer only because it makes the confident-and-wrong
 case visible, which is the single most useful thing a check can surface.
 

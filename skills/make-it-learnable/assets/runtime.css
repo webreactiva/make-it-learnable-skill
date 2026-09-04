@@ -583,6 +583,11 @@ l-whatif[inline] l-out{
 .ml-hud .ml-hud-pts i{font:500 .7rem/1 var(--ml-sans); font-style:normal; opacity:.5}
 .ml-hud[data-streak="1"] .ml-hud-pts{border-color:var(--ml-accent); color:var(--ml-accent)}
 .ml-hud .ml-hud-sub{font:500 .76rem var(--ml-sans); color:var(--ml-faint); padding-right:.5rem}
+.ml-hud>.ml-hud-best{order:3}
+.ml-hud .ml-hud-best{font:600 .72rem var(--ml-sans); color:var(--ml-faint); padding-right:.5rem}
+.ml-hud .ml-hud-best:empty{display:none}
+.ml-hud[data-beaten="1"] .ml-hud-best{color:var(--ml-accent)}
+.ml-hud[data-beaten="1"] .ml-hud-pts{border-color:var(--ml-accent)}
 @keyframes ml-rise{0%{opacity:0;transform:translateY(6px)}12%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0;transform:translateY(-10px)}}
 .ml-toast{
   order:0; animation:ml-rise 2.6s ease forwards; background:var(--ml-accent); color:var(--ml-on-accent);

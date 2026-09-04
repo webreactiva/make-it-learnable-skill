@@ -228,13 +228,17 @@ assets/                        the screenshots in this README
   before the reveal, being honest about confidence, and touching the model — never for
   clicking around. Explorable explanations are normally defined *against* gamification;
   this keeps a light layer only because it makes the confident-and-wrong case visible.
-  Score is in-memory: a reload restarts the lesson, which is what a reload should mean.
+  A run is in-memory: a reload restarts the lesson, which is what a reload should
+  mean. Only the **personal best** survives, in `localStorage`, so re-opening the file
+  gives the reader a score to race rather than a blank slate.
 
 ## Limits
 
 - `l-sandbox` is blocked by browsers on `file://`. Serve over HTTP
   (`python3 -m http.server`) to demo it, or leave it out of a file people open locally.
-- The score does not persist. There is no back end, and there is not going to be one.
+- Nothing leaves the browser. The personal best lives in `localStorage`, keyed by the
+  lesson title — private to that reader, on that machine, and gone if they clear site
+  data. There is no back end, and there is not going to be one.
 - A lesson is only as honest as its source. The skill's hardest rule is *build from the
   source, not from memory* — a lesson asserts things confidently and gives the reader
   no way to check, so a plausible fabrication does more damage here than in prose.

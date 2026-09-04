@@ -54,6 +54,7 @@ const STRINGS = {
       consolidated:['Consolidated','You confirmed every checkpoint.'],
       clean:['Clean run','Every check correct.']
     },
+    bestSoFar:n=>`best ${n.toLocaleString()}`, newBest:n=>`new best · beat ${n.toLocaleString()}`,
     run:'Run', reset:'Reset', labIdle:'Run a variant to see its output here.'
   },
   es: {
@@ -94,6 +95,7 @@ const STRINGS = {
       consolidated:['Consolidado','Confirmaste todos los checkpoints.'],
       clean:['Sin fallos','Todos los checks correctos.']
     },
+    bestSoFar:n=>`récord ${n.toLocaleString()}`, newBest:n=>`¡récord! · antes ${n.toLocaleString()}`,
     run:'Ejecutar', reset:'Reiniciar', labIdle:'Ejecuta una variante para ver su salida aquí.'
   }
 };
@@ -111,13 +113,26 @@ const T = STRINGS[(document.documentElement.lang || 'en').slice(0, 2).toLowerCas
    answer before seeing it, being honest about how sure you were, and
    touching the model yourself — and never pays for clicking around.
    It is a mirror of engagement, not a leaderboard.
-   ponytail: in-memory only. A reload restarts the lesson, which is
-   what a reload should mean. */
+   ponytail: the run is in-memory. A reload restarts the lesson, which
+   is what a reload should mean — only BestRun survives it. */
 const BADGES = T.badges;
+
+/* ══ personal best ════════════════════════════════════════════════
+   A lesson is one file people re-open, so the only state worth keeping
+   between visits is the run to beat. localStorage is the only place that
+   survives that on file://, and every access is guarded: private windows
+   and some file:// contexts throw on the accessor itself. Keyed by title
+   because all file:// pages share one origin. */
+const BestRun = {
+  key: 'ml:best:' + (document.title || 'lesson').slice(0, 90),
+  read() { try { return JSON.parse(localStorage.getItem(this.key)) || null; } catch { return null; } },
+  write(v) { try { localStorage.setItem(this.key, JSON.stringify(v)); } catch {} },
+};
 
 const Game = {
   points: 0, streak: 0, best: 0, right: 0, answered: 0, calibrated: 0, overconfident: 0,
   explored: new Set(), checks: 0, revisit: [], badges: new Set(), _hud: null,
+  prev: BestRun.read(), stored: null, beaten: false,  // prev is frozen at load: the run you are racing
   get quizTotal() { return document.querySelectorAll('l-quiz').length; },
   get canTotal() { return document.querySelectorAll('l-can').length; },
 
@@ -177,7 +192,8 @@ const Game = {
   hud() {
     if (this._hud || !this.quizTotal) return this._hud;
     const h = el('div', 'ml-hud');
-    h.innerHTML = '<span class="ml-hud-pts"><b>0</b><i>' + T.pts + '</i></span><span class="ml-hud-sub"></span>';
+    h.innerHTML = '<span class="ml-hud-pts"><b>0</b><i>' + T.pts + '</i></span>'
+                + '<span class="ml-hud-sub"></span><span class="ml-hud-best"></span>';
     document.body.append(h);
     return (this._hud = h);
   },
@@ -191,12 +207,22 @@ const Game = {
   },
 
   sync() {
+    // Settle the record first: painting before this leaves the HUD one sync behind.
+    if (this.points > (this.stored?.points ?? this.prev?.points ?? 0)) {
+      if (this.prev && this.points > this.prev.points) this.beaten = true;
+      this.stored = { points: this.points, right: this.right, total: this.quizTotal, at: Date.now() };
+      BestRun.write(this.stored);
+    }
     const h = this.hud();
     if (h) {
       h.querySelector('.ml-hud-pts b').textContent = this.points.toLocaleString();
       h.querySelector('.ml-hud-sub').textContent =
         this.streak >= 2 ? T.inARow(this.streak) : T.answeredOf(this.answered, this.quizTotal);
       h.dataset.streak = this.streak >= 2 ? '1' : '0';
+      h.querySelector('.ml-hud-best').textContent = !this.prev ? ''
+        : this.beaten ? T.newBest(this.prev.points)
+        : T.bestSoFar(this.prev.points);
+      h.dataset.beaten = this.beaten ? '1' : '0';
     }
     document.querySelectorAll('l-finish').forEach(f => f.render?.());
   }

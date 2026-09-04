@@ -234,15 +234,19 @@ assets/                        las capturas de este README
   de ver la respuesta, por ser honesto con la confianza y por tocar el modelo — nunca
   por hacer clics. Las explicaciones explorables se definen normalmente *en contra* de
   la gamificación; esto mantiene una capa muy fina solo porque hace visible el caso de
-  "seguro y equivocado". La puntuación vive en memoria: recargar reinicia la lección,
-  que es lo que debería significar recargar.
+  "seguro y equivocado". La partida vive en memoria: recargar reinicia la lección, que
+  es lo que debería significar recargar. Lo único que sobrevive es el **récord
+  personal**, en `localStorage`, para que volver a abrir el fichero dé una marca contra
+  la que competir en vez de una hoja en blanco.
 
 ## Límites
 
 - Los navegadores bloquean `l-sandbox` en `file://`. Sírvelo por HTTP
   (`python3 -m http.server`) para enseñarlo, o déjalo fuera de un fichero que la gente
   vaya a abrir en local.
-- La puntuación no persiste. No hay backend, y no lo va a haber.
+- Nada sale del navegador. El récord personal vive en `localStorage`, indexado por el
+  título de la lección — privado de quien lee, en su máquina, y se va si borra los datos
+  del sitio. No hay backend, y no lo va a haber.
 - Una lección es tan honesta como su fuente. La regla más dura de la skill es
   *construir desde la fuente, no desde la memoria* — una lección afirma cosas con
   seguridad y no le da a quien lee ninguna forma de comprobarlas, así que una
