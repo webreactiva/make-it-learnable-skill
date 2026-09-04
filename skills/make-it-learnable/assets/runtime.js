@@ -55,7 +55,8 @@ const STRINGS = {
       clean:['Clean run','Every check correct.']
     },
     bestSoFar:n=>`best ${n.toLocaleString()}`, newBest:n=>`new best · beat ${n.toLocaleString()}`,
-    run:'Run', reset:'Reset', labIdle:'Run a variant to see its output here.'
+    run:'Run', reset:'Reset', labIdle:'Run a variant to see its output here.',
+    labTimeout:'Stopped after 2 seconds.'
   },
   es: {
     kind: { prediction:'Predice primero', choose:'Elige', spot:'Encuéntralo', classify:'Clasifica',
@@ -96,7 +97,8 @@ const STRINGS = {
       clean:['Sin fallos','Todos los checks correctos.']
     },
     bestSoFar:n=>`récord ${n.toLocaleString()}`, newBest:n=>`¡récord! · antes ${n.toLocaleString()}`,
-    run:'Ejecutar', reset:'Reiniciar', labIdle:'Ejecuta una variante para ver su salida aquí.'
+    run:'Ejecutar', reset:'Reiniciar', labIdle:'Ejecuta una variante para ver su salida aquí.',
+    labTimeout:'Detenido después de 2 segundos.'
   }
 };
 const T = STRINGS[(document.documentElement.lang || 'en').slice(0, 2).toLowerCase()] || STRINGS.en;
@@ -808,6 +810,72 @@ def('l-state', StateBox);
    Variables in, expressions out. The model is deliberately naive —
    the point is letting the reader feel a causal relationship, not
    simulating the system faithfully. */
+const SAFE_MATH = new Set(['abs','ceil','floor','max','min','pow','round','sqrt']);
+function safeExpression(expr, names) {
+  if (!expr || expr.length > 500 || !/^[\w\s.+\-*/%(),<>=!&|?:]+$/.test(expr)) return false;
+  const props = [...expr.matchAll(/\.\s*([A-Za-z_]\w*)/g)].map(m => m[1]);
+  if (props.some(p => !SAFE_MATH.has(p))) return false;
+  const bare = expr.replace(/\.\s*\w+/g, '');
+  const allowed = new Set([...names, 'Math', 'true', 'false', 'null']);
+  const words = bare.match(/[A-Za-z_]\w*/g) || [];
+  return words.every(w => allowed.has(w)) && (!words.includes('Math') || /\bMath\s*\./.test(expr));
+}
+function evaluateExpression(expr, values) {
+  const tokenRe = /\s*(?:(\d+(?:\.\d+)?)|([A-Za-z_]\w*)|(===|!==|==|!=|<=|>=|&&|\|\||\*\*|[()+\-*/%,.?:<>!]))/gy;
+  const tokens = [];
+  let pos = 0, match;
+  while (pos < expr.length) {
+    tokenRe.lastIndex = pos; match = tokenRe.exec(expr);
+    if (!match) throw new Error('Invalid expression');
+    tokens.push(match[1] !== undefined ? ['number', +match[1]] : match[2] !== undefined ? ['name', match[2]] : ['op', match[3]]);
+    pos = tokenRe.lastIndex;
+  }
+  let i = 0;
+  const peek = value => tokens[i]?.[1] === value;
+  const take = value => { if (!peek(value)) throw new Error(`Expected ${value}`); return tokens[i++]; };
+  const primary = () => {
+    const token = tokens[i++];
+    if (!token) throw new Error('Unexpected end of expression');
+    if (token[0] === 'number') return token[1];
+    if (token[1] === '(') { const value = conditional(); take(')'); return value; }
+    if (token[0] !== 'name') throw new Error('Expected a value');
+    if (token[1] === 'true') return true;
+    if (token[1] === 'false') return false;
+    if (token[1] === 'null') return null;
+    if (token[1] === 'Math') {
+      take('.'); const method = tokens[i++];
+      if (method?.[0] !== 'name' || !SAFE_MATH.has(method[1])) throw new Error('Unsafe Math helper');
+      take('('); const args = [];
+      if (!peek(')')) { do { args.push(conditional()); } while (peek(',') && take(',')); }
+      take(')'); return Math[method[1]](...args);
+    }
+    if (!(token[1] in values)) throw new Error(`Unknown variable ${token[1]}`);
+    return values[token[1]];
+  };
+  const unary = () => peek('!') ? (take('!'), !unary()) : peek('-') ? (take('-'), -unary()) : peek('+') ? (take('+'), +unary()) : primary();
+  const power = () => { let left = unary(); if (peek('**')) { take('**'); left **= power(); } return left; };
+  const chain = (next, ops) => () => {
+    let left = next();
+    while (ops.includes(tokens[i]?.[1])) {
+      const op = tokens[i++][1], right = next();
+      left = op === '*' ? left * right : op === '/' ? left / right : op === '%' ? left % right
+        : op === '+' ? left + right : op === '-' ? left - right
+        : op === '<' ? left < right : op === '<=' ? left <= right : op === '>' ? left > right : op === '>=' ? left >= right
+        : op === '==' ? left == right : op === '!=' ? left != right : op === '===' ? left === right : left !== right;
+    }
+    return left;
+  };
+  const multiply = chain(power, ['*','/','%']);
+  const add = chain(multiply, ['+','-']);
+  const compare = chain(add, ['<','<=','>','>=']);
+  const equal = chain(compare, ['==','!=','===','!==']);
+  const and = () => { let left = equal(); while (peek('&&')) { take('&&'); const right = equal(); left = left && right; } return left; };
+  const or = () => { let left = and(); while (peek('||')) { take('||'); const right = and(); left = left || right; } return left; };
+  function conditional() { const test = or(); if (!peek('?')) return test; take('?'); const yes = conditional(); take(':'); const no = conditional(); return test ? yes : no; }
+  const result = conditional();
+  if (i !== tokens.length) throw new Error('Unexpected token');
+  return result;
+}
 class WhatIf extends HTMLElement {
   connectedCallback() {
     if (this._init) return; this._init = true;
@@ -886,7 +954,10 @@ class WhatIf extends HTMLElement {
     this.outs.forEach(o => {
       const expr = o.getAttribute('expr'); if (!expr) return;
       let v;
-      try { v = new Function(...keys, `"use strict"; return (${expr});`)(...vals); }
+      try {
+        if (!safeExpression(expr, keys)) throw new Error('Unsafe expression');
+        v = evaluateExpression(expr, Object.fromEntries(keys.map((key, i) => [key, vals[i]])));
+      }
       catch { v = '—'; }
       if (typeof v === 'number') v = Math.round(v * 100) / 100;
       const slot = o.querySelector('.ml-out-v');
@@ -924,12 +995,17 @@ class Sandbox extends HTMLElement {
       const frame = el('iframe');
       frame.setAttribute('sandbox', 'allow-scripts');
       frame.style.display = 'none';
+      const bytes = new TextEncoder().encode(ta.value);
+      let binary = ''; bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+      const encoded = btoa(binary);
       frame.srcdoc = `<script>
         const send=(k,a)=>parent.postMessage({k,a:a.map(x=>{try{return typeof x==='object'?JSON.stringify(x):String(x)}catch{return String(x)}})},'*');
         console.log=(...a)=>send('log',a); console.error=(...a)=>send('err',a); console.warn=(...a)=>send('log',a);
         addEventListener('error',e=>send('err',[e.message]));
-        try{ (0,eval)(${JSON.stringify(ta.value)}) }catch(e){ send('err',[e.message]) }
-        send('done',[]);
+        const raw=atob('${encoded}'), bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
+        const runner=document.createElement('script');
+        runner.textContent='try{\\n'+new TextDecoder().decode(bytes)+'\\n}catch(e){send("err",[e.message])}\\nsend("done",[])';
+        document.documentElement.append(runner);
       <\/script>`;
       const onMsg = e => {
         if (e.source !== frame.contentWindow) return;
@@ -947,13 +1023,8 @@ class Sandbox extends HTMLElement {
 def('l-sandbox', Sandbox);
 
 /* ══ Lab ══════════════════════════════════════════════════════════
-   Author-written variants the reader runs and compares — the "live
-   lab" that makes a mechanism operable instead of only visible. The
-   code is fixed (the reader cannot edit it), so it is exactly as
-   trusted as the lesson itself and runs inline in the page: no
-   iframe, which also means it works from file://, where the
-   sandboxed frame is blocked. Keep variants short and mostly
-   synchronous; the console hand-back happens after a short grace. */
+   Author-written variants run in a disposable Worker. They cannot touch the
+   lesson DOM, and a hard timeout stops accidental infinite loops. */
 class LabRun extends HTMLElement {
   connectedCallback() { this._code = (this.textContent || '').replace(/^\n/, '').replace(/\s+$/, ''); }
   get code() { return this._code ?? ''; }
@@ -971,7 +1042,6 @@ class Lab extends HTMLElement {
     if (!runs.length) return;
     this.innerHTML = '';
     const out = el('pre', 'ml-lab-out'); out.textContent = T.labIdle;
-    const fmt = x => { try { return typeof x === 'object' ? JSON.stringify(x) : String(x) } catch { return String(x) } };
     runs.forEach((r, i) => {
       const wrap = el('div', 'ml-lab-variant');
       const head = el('div', 'ml-lab-head');
@@ -987,25 +1057,21 @@ class Lab extends HTMLElement {
         Game.explore('lab');
         out.textContent = '';
         out.append(el('div', 'ml-lab-mark', '▸ ' + r.label));
-        const orig = { log: console.log, warn: console.warn, error: console.error };
-        const push = (cls, a) => out.append(el('div', cls, a.map(fmt).join(' ')));
-        console.log = (...a) => push(null, a);
-        console.warn = (...a) => push('ml-warn', a);
-        console.error = (...a) => push('ml-err', a);
-        const onErr = e => push('ml-err', [e.message]);
-        addEventListener('error', onErr);
-        let pending = 1;
-        const settle = () => { if (--pending === 0) { console.log = orig.log; console.warn = orig.warn; console.error = orig.error; removeEventListener('error', onErr); } };
-        try {
-          // AsyncFunction so top-level await works in a variant; the promise
-          // path below already handles settlement either way.
-          const res = new (Object.getPrototypeOf(async function(){}).constructor)(`"use strict";\n${r.code}`)();
-          if (res && typeof res.then === 'function') {
-            pending++;
-            res.then(settle, e => { push('ml-err', [String((e && e.message) || e)]); settle(); });
-          }
-        } catch (e) { push('ml-err', [String((e && e.message) || e)]); }
-        setTimeout(settle, 800);
+        const workerCode = `
+          const fmt=x=>{try{return typeof x==='object'?JSON.stringify(x):String(x)}catch{return String(x)}};
+          const send=(kind,args=[])=>postMessage({kind,text:args.map(fmt).join(' ')});
+          console.log=(...a)=>send('log',a); console.warn=(...a)=>send('warn',a); console.error=(...a)=>send('error',a);
+          (async()=>{try{\n${r.code}\n}catch(error){send('error',[error?.message||error])}finally{send('done')}})();`;
+        const url = URL.createObjectURL(new Blob([workerCode], { type: 'text/javascript' }));
+        const worker = new Worker(url);
+        const finish = () => { worker.terminate(); URL.revokeObjectURL(url); };
+        const timer = setTimeout(() => { out.append(el('div', 'ml-err', T.labTimeout || 'Stopped after 2 seconds.')); finish(); }, 2000);
+        worker.onmessage = e => {
+          const { kind, text } = e.data || {};
+          if (kind === 'done') { clearTimeout(timer); finish(); return; }
+          out.append(el('div', kind === 'error' ? 'ml-err' : kind === 'warn' ? 'ml-warn' : null, text));
+        };
+        worker.onerror = e => { clearTimeout(timer); out.append(el('div', 'ml-err', e.message)); finish(); };
       };
     });
     this.append(out);

@@ -433,10 +433,9 @@ demo it (`python3 -m http.server`).
 ### `l-lab` — run the author's fixed variants, compare the output
 
 Where `l-sandbox` says "edit and run your own code", `l-lab` says "run these
-fixed variants and watch them differ". The code is written by the lesson author
-and cannot be edited by the reader, so it is exactly as trusted as the lesson
-itself and runs inline in the page — no iframe, which also means it works from
-`file://`, where the sandbox frame is blocked. This is the primitive that turns
+fixed variants and watch them differ". The code is written by the lesson author,
+cannot be edited by the reader, and runs in a disposable Web Worker with no DOM
+access and a two-second timeout. It works from `file://`. This turns
 a mechanism the reader must *operate* (a buggy function beside its fix, two
 strategies over the same input) into something they run themselves.
 
@@ -456,9 +455,9 @@ strategies over the same input) into something they run themselves.
 ```
 
 Each `l-run` gets a Run button; a shared output console captures `console.log`,
-`warn`, `error` and uncaught errors, with a short grace window for promises.
-Keep each variant under ~30 lines and mostly synchronous — a lab that needs
-more setup than a click will not get run.
+`warn`, `error` and uncaught errors. Keep each variant under ~30 lines and below
+the two-second execution budget — a lab that needs more setup than a click will
+not get run.
 
 ---
 
