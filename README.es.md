@@ -106,18 +106,18 @@ justo, y una tarjeta **final** cierra la lección diciendo qué merece un repaso
 
 ### El vocabulario
 
-Veinte primitivas, agrupadas por lo que hacen — más el runtime `scroll-story` en el
+Las primitivas, agrupadas por lo que hacen. Dos son modos narrativos y se elige uno por tramo de la lección: `scroll-story` mantiene un objeto en pantalla y lo transforma con escenas, `l-panels` encadena dibujos a todo ancho con una frase encima. Más el runtime `scroll-story` en el
 que viven (con sus escenas `l-scene`) y la tarjeta `l-finish` que cierra la lección.
 Una buena lección usa **entre cuatro y siete**: elegir el puñado correcto es el
 verdadero acto de criterio, y usar más es ruido, no exhaustividad.
 
 | Familia | Primitivas |
 |---|---|
-| Estructura | `l-section` · `l-stack` · `l-split` · `l-stage` |
-| Narrativa | `l-stepper` · `l-branch` — dentro del runtime `scroll-story` y sus escenas `l-scene` |
+| Estructura | `l-section` · `l-stack` · `l-split` · `l-stage` · `l-draw` |
+| Narrativa | `l-panels` · `l-stepper` · `l-branch` — y el runtime `scroll-story` con sus escenas `l-scene` |
 | Atención | `l-focus` · `l-reveal` · `l-layer` · `l-anatomy` · `l-compare` |
 | Comportamiento | `l-transform` · `l-flow` · `l-trace` · `l-state` |
-| Experimento | `l-whatif` (panel o documento reactivo) · `l-sandbox` |
+| Experimento | `l-whatif` (panel o documento reactivo) · `l-sandbox` · `l-lab` |
 | Aprendizaje | `l-quiz` · `l-contrast` · `l-checkpoint` — y `l-finish` para terminar |
 
 Contrato de marcado completo: [`references/primitives.md`](skills/make-it-learnable/references/primitives.md).
@@ -193,7 +193,7 @@ python3 skills/make-it-learnable/scripts/build_lesson.py lesson-body.html --chec
 ## Ejemplos
 
 [`examples/gallery.html`](examples/gallery.html) — **no es una lección**, es el
-vocabulario entero en una página: las 20 primitivas, las 7 mecánicas de comprobación,
+vocabulario entero en una página: todas las primitivas, las 7 mecánicas de comprobación,
 todas las variantes, rellenadas con contenido sobre LLMs para que las demos digan algo
 real. Ábrelo directamente y úsalo para consultar. Su fuente legible está en
 [`skills/make-it-learnable/examples/gallery-body.html`](skills/make-it-learnable/examples/gallery-body.html);
@@ -206,7 +206,8 @@ modelos.
 skills/make-it-learnable/      la skill empaquetada — lo único que se distribuye
   SKILL.md                     el flujo + qué primitivas encajan con qué material
   references/authoring.md      cómo pasar de una fuente cualquiera a una lección
-  references/primitives.md     contrato de marcado de las 20 primitivas
+  references/primitives.md     contrato de marcado de todas las primitivas
+  references/visuals.md        cuándo dibujar en vez de tirar de un widget
   references/quiz-modes.md     las 7 mecánicas de comprobación
   assets/runtime.{css,js}      el runtime — nunca se toca al escribir una lección
   assets/logo.svg              la marca

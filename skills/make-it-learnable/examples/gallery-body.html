@@ -134,6 +134,67 @@
     trabajo: lo multiplica aproximadamente por cuatro. Es la razón de que las ventanas de
     contexto largas sean caras y de que exista tanta ingeniería para esquivar ese cuadrado.</p>
   </l-reveal>
+
+  <h3 style="margin-top:2.5rem">l-panels — el otro modo narrativo</h3>
+  <p>Sin scroll, sin stage pegajosa y sin escenas: una secuencia de beats, cada uno con
+  su propio dibujo a todo ancho y un titular que es una afirmación. El decorado se repite
+  —la línea del prompt está siempre en el mismo sitio— para que el lector solo procese lo
+  que cambia.</p>
+  <l-panels numbered>
+    <l-panel title="El modelo no sabe qué palabra viene.">
+      <p>Ha leído el prompt entero. Lo que tiene delante es un hueco.</p>
+      <l-draw>
+        <svg viewBox="0 0 640 120" role="img" aria-label="El prompt terminado en un hueco vacío">
+          <text class="ml-label" x="20" y="52" font-size="26">El gato se subió al</text>
+          <rect class="ml-stroke ml-accent" x="268" y="26" width="130" height="38" rx="6" stroke-dasharray="8 6"/>
+          <text class="ml-fill ml-accent" x="333" y="54" text-anchor="middle" font-size="28" font-weight="700">?</text>
+        </svg>
+      </l-draw>
+    </l-panel>
+    <l-panel title="Pero sabe cuánto apuesta por cada una.">
+      <p>Para todas las palabras que conoce, a la vez. Aquí van las cuatro de arriba.</p>
+      <l-draw>
+        <svg viewBox="0 0 640 250" role="img" aria-label="Cuatro candidatas con su probabilidad; tejado es la más alta con un 51 por ciento">
+          <text class="ml-label" x="20" y="52" font-size="26">El gato se subió al</text>
+          <rect class="ml-stroke ml-muted" x="268" y="26" width="130" height="38" rx="6" stroke-dasharray="8 6"/>
+          <g class="ml-fill ml-accent">
+            <rect x="20" y="96"  width="352" height="28"/><rect x="20" y="138" width="166" height="28"/>
+            <rect x="20" y="180" width="90"  height="28"/><rect x="20" y="222" width="55"  height="28"/>
+          </g>
+          <g class="ml-label" font-size="18">
+            <text x="386" y="116">tejado · 51%</text><text x="200" y="158">coche · 24%</text>
+            <text x="124" y="200">árbol · 13%</text><text x="89" y="242">sofá · 8%</text>
+          </g>
+        </svg>
+      </l-draw>
+    </l-panel>
+    <l-panel title="Y entonces tira un dado cargado.">
+      <p>No coge siempre la más alta. Si lo hiciera, el mismo prompt daría siempre el mismo
+      texto y sonaría a máquina.</p>
+      <l-draw>
+        <svg viewBox="0 0 640 250" role="img" aria-label="Sale coche, la segunda candidata, pese a no ser la más probable">
+          <text class="ml-label" x="20" y="52" font-size="26">El gato se subió al</text>
+          <rect class="ml-stroke ml-accent" x="268" y="26" width="130" height="38" rx="6"/>
+          <text class="ml-fill ml-accent" x="333" y="54" text-anchor="middle" font-size="24" font-weight="700">coche</text>
+          <g class="ml-fill ml-muted" opacity=".4">
+            <rect x="20" y="96"  width="352" height="28"/><rect x="20" y="180" width="90" height="28"/>
+            <rect x="20" y="222" width="55"  height="28"/>
+          </g>
+          <rect class="ml-fill ml-accent" x="20" y="138" width="166" height="28"/>
+          <g class="ml-label ml-muted" font-size="18">
+            <text x="386" y="116">tejado · 51%</text><text x="124" y="200">árbol · 13%</text>
+            <text x="89" y="242">sofá · 8%</text>
+          </g>
+          <text class="ml-label ml-accent" x="200" y="158" font-size="18" font-weight="700">coche · 24% ← salió esta</text>
+        </svg>
+      </l-draw>
+    </l-panel>
+    <l-panel title="Eso ha sido una palabra.">
+      <p>Ahora el prompt es una palabra más largo y todo vuelve a empezar, de cero, para la
+      siguiente.</p>
+      <p class="ml-huge">1 token<small>y otra vuelta entera del modelo</small></p>
+    </l-panel>
+  </l-panels>
 </l-section>
 
 <!-- ═══ ATENCIÓN: Anatomy, Compare, Layer ═══════════════════════ -->
@@ -192,6 +253,46 @@
     <div data-part="q" data-layer="calidad"><p><b>Calidad.</b> Más contexto no es
     monótonamente mejor: la información relevante se diluye entre la irrelevante.</p></div>
   </l-stage>
+
+  <h3 style="margin-top:2.5rem">l-draw</h3>
+  <p>Cuando la forma de la idea no es la forma de ningún widget, se dibuja. El SVG
+  vive dentro del <code>l-stage</code> y obedece al mismo protocolo de efectos:
+  <code>data-part</code>, <code>data-reveal</code>, <code>data-when</code>.</p>
+  <l-split ratio="1:1">
+    <l-stepper stage="kv">
+      <l-step state="corto"><p><b>Contexto corto.</b> La caché ocupa poco y caben
+      muchas peticiones a la vez en la misma tarjeta.</p></l-step>
+      <l-step state="largo" focus="kv2"><p><b>Contexto largo.</b> La caché crece de forma
+      lineal: cuatro veces más contexto es cuatro veces más memoria, y se paga en cada turno.</p></l-step>
+      <l-step state="tope" focus="tope"><p><b>El tope.</b> No lo pone la calidad del modelo:
+      lo pone la memoria de la tarjeta.</p></l-step>
+    </l-stepper>
+    <l-stage id="kv" label="Memoria de la GPU">
+      <l-draw>
+        <svg viewBox="0 0 320 190" role="img" aria-label="La caché de claves y valores creciendo dentro de la memoria de una GPU hasta agotarla">
+          <rect class="ml-stroke ml-muted" x="10" y="30" width="300" height="150" rx="6"/>
+          <text class="ml-label ml-muted" x="10" y="22">80 GB</text>
+          <g data-part="pesos">
+            <rect class="ml-fill ml-accent-2" fill-opacity=".85" x="20" y="152" width="280" height="20"/>
+            <text class="ml-label ml-on-accent" x="30" y="166">pesos del modelo</text>
+          </g>
+          <g data-part="kv1" data-when="corto">
+            <rect class="ml-fill ml-accent" x="20" y="120" width="280" height="24"/>
+            <text class="ml-label ml-on-accent" x="30" y="137">caché KV · 4k tokens</text>
+          </g>
+          <g data-part="kv2" data-when="largo">
+            <rect class="ml-fill ml-accent" x="20" y="52" width="280" height="92"/>
+            <text class="ml-label ml-on-accent" x="30" y="70">caché KV · 16k tokens</text>
+          </g>
+          <g data-part="tope" data-when="tope">
+            <rect class="ml-fill ml-accent" x="20" y="38" width="280" height="106"/>
+            <path class="ml-stroke ml-bad" d="M10 34 H310"/>
+            <text class="ml-label ml-bad" x="300" y="28" text-anchor="end">out of memory</text>
+          </g>
+        </svg>
+      </l-draw>
+    </l-stage>
+  </l-split>
 </l-section>
 
 <!-- ═══ COMPORTAMIENTO: Transform, Trace, State, Stepper ════════ -->

@@ -20,7 +20,8 @@ there is what separates a lesson from a document with widgets on it.
 | | |
 |---|---|
 | `references/authoring.md` | **Read first.** How to go from arbitrary source to a lesson, and the pedagogy that makes it work. |
-| `references/primitives.md` | Markup contract for all 20 primitives. Read the sections for the primitives you picked. |
+| `references/primitives.md` | Markup contract for every primitive. Read the sections for the ones you picked. |
+| `references/visuals.md` | How to decide what to draw, and how to draw it. Read it whenever you reach for `l-draw`. |
 | `references/quiz-modes.md` | The 7 check mechanics and how to choose between them. |
 | `assets/runtime.css`, `assets/runtime.js` | The runtime. Never edit these when authoring a lesson; never inline them by hand either. |
 | `scripts/build_lesson.py` | Assembles and validates. Always use it. |
@@ -78,14 +79,20 @@ the runbook is dodging. Say which you think it is before building, not after.
 
 ### 2. Choose the primitives — most of them are wrong for any given lesson
 
-There are 21. A good lesson uses **4 to 7**. Picking the right handful is the
-main act of judgement in this skill; using more is not thoroughness, it is noise.
+A good lesson uses **4 to 7** of them. Picking the right handful is the main act
+of judgement in this skill; using more is not thoroughness, it is noise.
 
-Start from the shape of the thing you were given:
+The table below is where to start, not what to file. It maps the common shapes to
+the primitives that usually fit them, and if you follow it literally every lesson
+about a process will look like every other lesson about a process. Take the row,
+then ask what this *particular* subject does that the row cannot show — and draw
+that with `l-draw`. A lesson should have at least one representation that only
+this subject could have produced.
 
 | The source is… | Reach for | Usually wrong here |
 |---|---|---|
-| **A process or sequence** — request lifecycle, CI/CD, algorithm, protocol, agent loop | `l-stage` + `l-flow`, scenes revealing it step by step, `l-trace` for one concrete run · checks: `arrange`, `prediction` | `l-anatomy`, `l-compare` |
+| **A process or sequence** — request lifecycle, CI/CD, algorithm, protocol, agent loop | `l-panels` for the walk-through, `l-stage` + `l-flow` where it must transform, `l-trace` for one concrete run · checks: `arrange`, `prediction` | `l-anatomy`, `l-compare` |
+| **Something that moves, fills, drains or decays** — a buffer, a queue, a token budget, a retry storm, memory layout | `l-draw` on the stage, transformed scene by scene · checks: `prediction`, `estimate` | `l-flow` — boxes cannot show a thing filling up |
 | **A structure or artefact** — a prompt, a URL, an HTTP response, a config, a JSON payload, a file format | `l-anatomy` + `l-focus`, `l-split` to hold the whole beside the part · checks: `spot`, `classify` | `l-flow`, `l-trace` |
 | **A decision or trade-off** — REST vs GraphQL, SQL vs NoSQL, monolith vs services | `l-compare` with criteria revealed one at a time, `l-branch` for different readers, `l-contrast` · checks: `classify`, `explain`, `choose` | `l-trace`, `l-sandbox` |
 | **A quantitative relationship** — latency, cost, scaling, tokens, memory | `l-whatif inline` first (numbers inside the sentence), panel form only if they must hunt for a threshold · checks: `estimate`, `prediction` | `l-anatomy` |
@@ -96,13 +103,25 @@ Start from the shape of the thing you were given:
 | **A conceptual distinction** — state vs derived, sync vs async, compile-time vs runtime | `l-compare` + `l-contrast` · checks: `classify` above all | `l-flow`, `l-sandbox` |
 | **Non-technical material** — history, rhetoric, policy, process design | `l-anatomy`, `l-compare`, `l-transform`, `l-contrast` · checks: `classify`, `explain`, `prediction` | `l-whatif`, `l-sandbox`, `l-state` — do not invent a model where there isn't one |
 
-Five things are effectively always present, whatever the topic:
+Four things are effectively always present, whatever the topic:
 
 - `l-section` with a real `goal` on each
-- `scroll-story` with scenes, if there is a diagram worth building up
 - at least one `prediction` check, early — it is the strongest move in the format
 - `l-checkpoint` every three or four sections
 - `l-finish` at the end
+
+**Then pick a narrative mode per stretch of the lesson — there are two, and
+neither is the default.** `scroll-story` with scenes keeps one object on screen
+and transforms it; use it where something genuinely has to *change*. `l-panels`
+runs a sequence of full-width drawings, one question each, and is usually the
+better opening: it gets a picture in front of the reader immediately instead of
+spending three screens of scroll on the premise. A lesson can use both, and can
+use panels more than once.
+
+The failure to avoid is the one the examples used to model: wrapping the whole
+lesson in `<scroll-story>` when the scenes are three sections out of twelve. The
+progress rail works without it. Reach for a story where the transformation is,
+and nowhere else.
 
 Everything else has to earn its place. The test: *what would the reader fail to
 understand if this were a paragraph instead?* No answer means make it a paragraph.
@@ -155,15 +174,19 @@ Wrap everything in `<div class="ml-shell">` and open with a hero:
   <p class="ml-lede">Not "because it's faster". By the end you should be able to
   say what it is faster <em>than</em>, and what breaks when it is wrong.</p>
 </header>
+<l-section id="…" title="…" goal="…">
+  <l-panels>…beats, each one drawing…</l-panels>
+</l-section>
 <scroll-story>
-  …sections…
+  …only the sections where one object transforms…
 </scroll-story>
 <l-finish title="…"><l-next><p>…</p></l-next></l-finish>
 </div>
 ```
 
 Consult `references/primitives.md` for the markup of the primitives you chose,
-and `references/quiz-modes.md` for the checks. Do not guess attribute names —
+`references/visuals.md` before you draw anything, and `references/quiz-modes.md`
+for the checks. Do not guess attribute names —
 the validator will catch you, but reading is faster.
 
 Write `<l-why>` before writing the question it belongs to, and an `<l-miss>` for

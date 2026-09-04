@@ -99,6 +99,13 @@ Concretely: a good 10-minute lesson uses **4 to 7 distinct primitives**, one
 stage, and 4 to 6 checks. Using more of the vocabulary is not better coverage,
 it is noise.
 
+**A widget you did not choose is a decision you did not make.** The primitive
+table hands you `l-flow` for a process and `l-anatomy` for a structure, and those
+answers are usually right — which is exactly why reaching for them is not yet a
+judgement. Ask what this subject looks like when it is working, and if the answer
+is not boxes and arrows, draw it with `l-draw`. `references/visuals.md` covers
+when that is worth the cost and how to do it without producing clipart.
+
 **Prefer operable to visible when the model is honest.** Blind judging of
 lessons repeatedly favours the one where the reader *runs* the mechanism — a
 buggy function executed beside its fix, a strategy simulated on a real input —
@@ -118,6 +125,13 @@ more efficiently than drawing it.
   prediction is worthless.
 - Checkpoint every three or four sections. Long explanations without
   consolidation let readers stack new concepts on a broken base.
+- **Spend the expensive mechanism on the expensive content.** A scroll story
+  costs the reader three screens of scrolling per handful of sentences. Spending
+  that on the premise everyone already accepts — "parsing the request is almost
+  never the problem" — and then resolving the genuinely hard part with a static
+  list is the most common way this format wastes a reader. Open with panels,
+  which get a picture up immediately, and save the story for the thing that has
+  to move.
 - **Interleave at least one check.** A check placed immediately after the section
   that taught the thing measures whether the idea is still in working memory —
   cheap to pass, and close to worthless as evidence. A check in section six that
@@ -161,8 +175,9 @@ delete it. Three real options beat four with a decoy.
 
 ## Voice
 
-Write like someone who has been burned by this in production, explaining it to a
-colleague. Concrete numbers over adjectives. Name the trade-off rather than
+Write like someone who has actually done the thing, explaining it to someone
+about to do it for the first time. They know where the reader is going to trip,
+because they tripped there. Concrete numbers over adjectives. Name the trade-off rather than
 selling the technique. It is fine — good, actually — to say when the thing being
 taught is a bad idea.
 
@@ -187,4 +202,9 @@ built from a Spanish document is written in Spanish.
 | the ending is a score | `l-finish` should say what to revisit and where to go next |
 | the reader can finish without ever being wrong | the checks are too easy to be worth their attention |
 | every check sits directly under the thing it tests | you measured fluency, not retention — interleave one |
+| the stage is three grey boxes with arrows | you filed the subject under a shape and drew the shape, not the subject |
+| the whole lesson is wrapped in a scroll-story with three scenes in it | you used it as a container; it is a narrative mode, and the progress rail does not need it |
+| the scroll story carries the obvious part and a static list carries the hard part | the mechanisms are the wrong way round |
+| the same system is drawn differently in two panels | those are scenes on a stage, not panels — and one of the two drawings is now teaching a lie |
+| the drawing never changes across scenes | that is a picture; it belongs in the prose, not on a sticky stage |
 | the correct option is visibly the longest one | the reader can pick on shape without reading |

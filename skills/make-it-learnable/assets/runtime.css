@@ -1,4 +1,4 @@
-/* make-it-learnable runtime — design system + 20 primitives. No dependencies. */
+/* make-it-learnable runtime — design system + primitives. No dependencies. */
 
 /* Palette: Fiery Ocean, assigned by role rather than by looks.
    The trap in this palette is that it ships two reds, and a lesson cannot
@@ -142,6 +142,23 @@ l-stage .ml-stage-label{
   font:600 .8rem/1.3 var(--ml-sans); color:var(--ml-accent-2); margin-bottom:1rem;
 }
 
+/* ── Authored drawing ──────────────────────────────────────────── */
+l-draw{display:block}
+l-draw>svg{
+  display:block; width:100%; height:auto; overflow:visible;
+  color:var(--ml-fg); font-family:var(--ml-sans);
+}
+/* opt-in helpers: colour rides on `color`, so one class tints fill and stroke */
+l-draw .ml-fill{fill:currentColor; stroke:none}
+l-draw .ml-stroke{fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round}
+l-draw .ml-label{fill:currentColor; font-size:13px}
+l-draw .ml-accent{color:var(--ml-accent)}
+l-draw .ml-accent-2{color:var(--ml-accent-2)}
+l-draw .ml-muted{color:var(--ml-muted)}
+l-draw .ml-ok{color:var(--ml-ok)}
+l-draw .ml-bad{color:var(--ml-bad)}
+l-draw .ml-on-accent{color:var(--ml-on-accent)}
+
 /* Focus / Reveal target styling (applied to [data-part] inside a stage) */
 [data-part]{transition:opacity .35s ease, filter .35s ease, box-shadow .25s ease, border-color .25s}
 l-stage[data-focusing="1"] [data-part]:not([data-focus]){opacity:.28; filter:saturate(.35)}
@@ -177,6 +194,36 @@ l-scene>*{max-width:44ch}
   .ml-story-grid>.ml-story-stage{position:sticky; top:.5rem; z-index:5; margin-bottom:1rem}
   l-scene{min-height:56vh}
 }
+
+/* ── Panels ────────────────────────────────────────────────────────
+   The inverse of .ml-story-grid: instead of prose scrolling past a small
+   pinned stage, each beat is a full-width drawing with a sentence over it.
+   Proportions are the point — the drawing is ~2x the width of the prose
+   column, and roughly two thirds of the vertical space. */
+l-panels{display:block; margin:clamp(1.5rem,5vh,3rem) 0}
+l-panels[numbered]{counter-reset:ml-panel}
+l-panel{display:block; max-width:780px; padding:clamp(2rem,7vh,4.5rem) 0}
+l-panel:first-of-type{padding-top:0}
+l-panel+l-panel{border-top:1px solid var(--ml-line)}
+l-panels[numbered]>l-panel::before{
+  counter-increment:ml-panel; content:counter(ml-panel);
+  display:grid; place-items:center; width:1.75rem; height:1.75rem; margin-bottom:1rem;
+  border-radius:var(--ml-r-pill); background:var(--ml-accent); color:var(--ml-on-accent);
+  font:600 .8rem/1 var(--ml-sans);
+}
+.ml-panel-title{
+  font-family:var(--ml-display); font-weight:600; font-size:clamp(1.2rem,2.4vw,1.5rem);
+  line-height:1.22; letter-spacing:-.02em; margin:0 0 .55rem; max-width:32ch;
+}
+l-panel>p{max-width:38ch; color:var(--ml-muted); margin:0 0 1.5rem}
+l-panel>l-draw{margin-top:.5rem}
+/* A beat that is one number. The figure is the drawing. */
+.ml-huge{
+  font-family:var(--ml-display); font-weight:700; line-height:1; letter-spacing:-.035em;
+  font-size:clamp(3rem,10vw,5.5rem); color:var(--ml-accent);
+  max-width:none; margin:.4rem 0 1.2rem;
+}
+.ml-huge small{display:block; font:500 .9rem/1.4 var(--ml-sans); color:var(--ml-muted); letter-spacing:0; margin-top:.5rem}
 
 /* ── Stepper ───────────────────────────────────────────────────── */
 l-stepper{display:block}

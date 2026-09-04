@@ -395,6 +395,18 @@ function readFx(node) {
    The narrative runtime. Scroll position is already how people move
    through a page, so we read it as narrative time rather than adding
    a second set of controls the reader has to learn. */
+/* A sequence of self-contained visual beats: one drawing per panel, a
+   sentence for a title, a caption. No scroll machinery, no JS behaviour —
+   the drawing carries the argument and the page reads with JS disabled. */
+class Panel extends HTMLElement {
+  connectedCallback() {
+    if (this._init) return; this._init = true;
+    const t = this.getAttribute('title');
+    if (t) { this.removeAttribute('title'); this.prepend(el('h3', 'ml-panel-title', t)); }
+  }
+}
+def('l-panel', Panel);
+
 class ScrollStory extends HTMLElement {
   connectedCallback() {
     if (this._init) return; this._init = true;

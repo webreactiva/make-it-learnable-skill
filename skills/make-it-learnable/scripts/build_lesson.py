@@ -33,6 +33,10 @@ class Node:
             out.extend(c.find(*tags))
         return out
     def kids(self, *tags): return [c for c in self.children if c.tag in tags]
+    def walk(self):
+        for c in self.children:
+            yield c
+            yield from c.walk()
     def inner_text(self):
         s = "".join(self.text)
         for c in self.children: s += c.inner_text()
@@ -78,8 +82,7 @@ def check(root):
             seen[i] = n.tag
 
     stages = root.find("l-stage")
-    parts = {p.get("data-part") for st in stages for p in st.find(*ALL_TAGS) + st.find("div", "span", "li", "g", "rect")
-             if p.get("data-part")}
+    parts = {p.get("data-part") for st in stages for p in st.walk() if p.get("data-part")}
     parts |= {n.get("id") for st in stages for n in st.find("l-node") if n.get("id")}
     stage_ids = {s.get("id") for s in stages if s.get("id")}
 
@@ -116,10 +119,30 @@ def check(root):
         for s in stages:
             if (sid and s.get("id") == sid) or (not sid and st is None): st = s
         if st:
-            have = {x.get("data-layer") for x in st.find(*ALL_TAGS) + st.find("div", "span", "g", "path")
-                    if x.get("data-layer")}
+            have = {x.get("data-layer") for x in st.walk() if x.get("data-layer")}
             for m in names - have:
                 if have: err.append(f"<l-layer> declares '{m}' but no [data-layer=\"{m}\"] exists in the stage")
+
+    # ── panels: the discipline is the whole mechanism
+    for ps in root.find("l-panels"):
+        panels = ps.kids("l-panel")
+        if len(panels) < 3:
+            warn.append(f"<l-panels> has {len(panels)} panel(s) — a sequence needs at least 3, "
+                        "otherwise these are illustrated paragraphs")
+    for pn in root.find("l-panel"):
+        t = pn.get("title")
+        where = f"<l-panel title=\"{t or '?'}\">"
+        if not t:
+            warn.append("<l-panel> has no title= — the title is the claim the drawing then shows")
+        elif t.rstrip().endswith(("?",)) is False and " " not in t.strip():
+            warn.append(f"{where} title is one word — a panel title is a sentence, not a topic")
+        if not pn.find("l-draw") and not any("ml-huge" in (k.get("class") or "") for k in pn.children):
+            warn.append(f"{where} has no <l-draw> and no .ml-huge figure — a panel with nothing "
+                        "to look at is a paragraph")
+        words = sum(len(k.inner_text().split()) for k in pn.kids("p"))
+        if words > 40:
+            warn.append(f"{where} caption is {words} words — panels hold ~25; the drawing is "
+                        "supposed to be carrying this")
 
     # ── quizzes
     for q in root.find("l-quiz"):
@@ -222,7 +245,7 @@ def check(root):
 
 KIND = {"prediction", "choose", "spot", "classify", "arrange", "explain", "estimate"}
 ALL_TAGS = ["l-section","l-stack","l-split","l-stage","scroll-story","l-scene","l-stepper","l-step",
-            "l-focus","l-reveal","l-layer","l-anatomy","l-part","l-note","l-compare","l-column",
+            "l-panels","l-panel","l-draw","l-focus","l-reveal","l-layer","l-anatomy","l-part","l-note","l-compare","l-column",
             "l-criterion","l-cell","l-transform","l-phase","l-flow","l-node","l-edge","l-trace",
             "l-tstep","l-state","l-field","l-whatif","l-var","l-out","l-sandbox","l-lab","l-run","l-quiz","l-prompt",
             "l-situation","l-option","l-region","l-bucket","l-item","l-pair","l-left","l-right",

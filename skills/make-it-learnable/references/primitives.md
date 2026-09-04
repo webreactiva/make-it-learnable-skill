@@ -1,6 +1,6 @@
 # The vocabulary
 
-Twenty primitives plus a runtime. Each one does a single thing, and complex
+A vocabulary plus a runtime. Each primitive does a single thing, and complex
 teaching objects are built by combining them rather than by reaching for a
 bigger component. A `CodeWalkthrough` is not a primitive — it is
 `Split + Stepper + Focus + Trace + State`.
@@ -10,8 +10,8 @@ the runtime only adds behaviour. Nothing needs a build step.
 
 ## Contents
 
-- [Structure](#structure) — `l-section`, `l-stack`, `l-split`, `l-stage`
-- [Narrative](#narrative) — `scroll-story`, `l-scene`, `l-stepper`, `l-branch`
+- [Structure](#structure) — `l-section`, `l-stack`, `l-split`, `l-stage`, `l-draw`
+- [Narrative](#narrative) — `scroll-story`, `l-scene`, `l-panels`, `l-stepper`, `l-branch`
 - [Attention](#attention) — `l-focus`, `l-reveal`, `l-layer`, `l-anatomy`, `l-compare`
 - [Behaviour](#behaviour) — `l-transform`, `l-flow`, `l-trace`, `l-state`
 - [Experiment](#experiment) — `l-whatif` (panel and reactive-document forms), `l-sandbox`, `l-lab`
@@ -79,6 +79,56 @@ Anything inside a stage that other primitives should be able to point at needs
 <div data-part="redis" data-reveal="later">Redis</div>
 ```
 
+### `l-draw` — a drawing you author, driven by the story
+
+The other visual primitives are furniture: `l-flow` gives you boxes on a grid,
+`l-anatomy` gives you labelled parts. They are right when the shape of the idea
+*is* boxes and arrows, and they are wrong the rest of the time — which is more
+often than the vocabulary makes it look. `l-draw` holds inline SVG you wrote for
+this one subject, and puts it under the same effect protocol as everything else.
+
+```html
+<l-stage id="pipe" label="How a request gets a body" sticky>
+  <l-draw>
+    <svg viewBox="0 0 640 260" role="img" aria-label="A request travelling through the proxy">
+      <path class="ml-stroke ml-muted" d="M40 130 H600"/>
+      <g data-part="proxy">
+        <rect class="ml-fill ml-accent" fill-opacity=".14" x="250" y="80" width="140" height="100" rx="10"/>
+        <text class="ml-label" x="320" y="135" text-anchor="middle">proxy</text>
+      </g>
+      <circle data-part="packet" data-reveal="later" class="ml-fill ml-accent" cx="120" cy="130" r="14"/>
+      <g data-part="buffer" data-when="buffered">…</g>
+    </svg>
+  </l-draw>
+</l-stage>
+```
+
+Any element inside the drawing can carry `data-part`, `data-reveal="later"`,
+`data-when` or `data-layer` — a `<g>`, a `<path>`, a single `<text>` — and every
+`focus=`, `reveal=`, `state=` and `layers=` on a scene, step or trace works on it
+unchanged. That is the whole point: eleven diagrams in a slideshow teach a
+slideshow; one drawing that changes teaches a mechanism.
+
+**Focus reads as everything else fading.** The runtime dims unfocused parts; it
+does not draw a ring around SVG. If a part needs to look emphatic, draw it
+emphatic — that is your job, not the stylesheet's.
+
+**Helpers, all opt-in.** `l-draw` sets nothing on your elements unless you ask
+for it, so a plain `fill="#c1121f"` is yours to keep. When you do want the
+lesson's palette — and you usually do, because it is the only way the drawing
+survives dark mode and printing — the classes carry it: `ml-fill` and `ml-stroke`
+paint from `currentColor`, `ml-label` sets text, and `ml-accent`, `ml-accent-2`,
+`ml-muted`, `ml-ok` and `ml-bad` set the `color` that both inherit from. A label
+sitting *on* a filled shape needs `ml-on-accent`, which is the one colour that
+stays readable against a fill in both themes. Tint with `fill-opacity`, not with
+a second colour.
+
+Give the `<svg>` a `viewBox` and no `width`/`height` — it fills the stage and
+scales. Give it `role="img"` and an `aria-label` saying what it shows.
+
+`references/visuals.md` is how to decide *what* to draw. Read it before drawing;
+a technically correct SVG of the wrong thing is still the wrong thing.
+
 ---
 
 ## Narrative
@@ -106,6 +156,12 @@ scrolling backwards or deep-linking never shows a half-built diagram.
 </l-scene>
 ```
 
+Each scene reserves `72vh` so the reader has room to read before the stage
+moves. Seven one-sentence scenes is therefore five viewports of scrolling for
+seven sentences — if the beats are that short, either they belong in one scene
+or the stretch wants `l-panels`. Set `--scene-height` on the `scroll-story` to
+override (`style="--scene-height:56vh"`).
+
 **One beat per scene, and keep it short.** A scene is a single moment of the
 narration, not a container for a topic — three or four facts in one scene means
 the reader is still reading while the stage has already moved on. Split it.
@@ -121,6 +177,50 @@ The idiomatic layout is prose scrolling past a pinned stage:
   </div>
 </div>
 ```
+
+### `l-panels` — a sequence of beats, each with its own drawing
+
+The other narrative mode, and the inverse of a scroll story. There is no sticky
+stage, no scene, no scroll machinery and no JS: each beat is a full-width
+drawing with a sentence over it, and the reader just reads down the page.
+
+```html
+<l-panels numbered>
+  <l-panel title="El modelo no sabe qué palabra viene.">
+    <p>Ha leído el prompt entero. Lo que tiene delante es un hueco.</p>
+    <l-draw><svg viewBox="0 0 640 120" role="img" aria-label="…">…</svg></l-draw>
+  </l-panel>
+  <l-panel title="Pero sabe cuánto apuesta por cada una.">…</l-panel>
+  <l-panel title="Y entonces tira un dado cargado.">…</l-panel>
+</l-panels>
+```
+
+`numbered` puts a counter on each beat — right for anything the reader will
+count off ("eight things happen"), noise for an argument. A beat whose payload
+is a single figure uses `<p class="ml-huge">200 ms<small>por lectura</small></p>`
+instead of a drawing; the number *is* the drawing.
+
+**The proportions are the mechanism, and they are already in the CSS.** The
+drawing is 780px wide against a 38ch prose column — about twice as wide — and
+takes roughly two thirds of the vertical space. Do not fight that with a wall of
+text: the caption is around 25 words, the title carries the claim, and the
+drawing carries the argument. The builder warns past 40 words.
+
+**Which mode for which job.** These two are not stylistic alternatives:
+
+| | reach for |
+|---|---|
+| one object the reader must watch change — a system gaining a component, a buffer filling, state moving through a machine | `scroll-story` + `l-stage` |
+| several distinct questions, each answered by its own picture | `l-panels` |
+
+Getting this backwards has a specific cost. A sequence of independent drawings
+of *the same system* lets the topology drift between beats — draw a cache beside
+the database in one panel and in the middle in the next, and you have taught
+read-through while meaning cache-aside. If the beats are redraws of one thing,
+they are scenes, and they belong on a stage.
+
+Panels can appear more than once in a lesson, and a lesson can use both modes:
+panels to build the picture, a stage later for the part that has to move.
 
 ### `l-stepper` — discrete, reversible progression
 

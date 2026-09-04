@@ -104,18 +104,18 @@ with what to revisit.
 
 ### The vocabulary
 
-Twenty primitives, grouped by what they do — plus the `scroll-story` runtime they
+The primitives, grouped by what they do. Two of them are narrative modes and you pick one per stretch of the lesson: `scroll-story` keeps one object on screen and transforms it through scenes, `l-panels` runs a sequence of full-width drawings with a sentence over each. Plus the `scroll-story` runtime they
 live inside (with its `l-scene` beats) and the `l-finish` card that closes a lesson.
 A good lesson uses **four to seven** of them: picking the right handful is the main
 act of judgement, and using more is noise, not thoroughness.
 
 | Family | Primitives |
 |---|---|
-| Structure | `l-section` · `l-stack` · `l-split` · `l-stage` |
-| Narrative | `l-stepper` · `l-branch` — inside the `scroll-story` runtime and its `l-scene` beats |
+| Structure | `l-section` · `l-stack` · `l-split` · `l-stage` · `l-draw` |
+| Narrative | `l-panels` · `l-stepper` · `l-branch` — and the `scroll-story` runtime with its `l-scene` beats |
 | Attention | `l-focus` · `l-reveal` · `l-layer` · `l-anatomy` · `l-compare` |
 | Behaviour | `l-transform` · `l-flow` · `l-trace` · `l-state` |
-| Experiment | `l-whatif` (panel or reactive-document) · `l-sandbox` |
+| Experiment | `l-whatif` (panel or reactive-document) · `l-sandbox` · `l-lab` |
 | Learning | `l-quiz` · `l-contrast` · `l-checkpoint` — and `l-finish` to end |
 
 Full markup contract: [`references/primitives.md`](skills/make-it-learnable/references/primitives.md).
@@ -188,7 +188,7 @@ python3 skills/make-it-learnable/scripts/build_lesson.py lesson-body.html --chec
 ## Examples
 
 [`examples/gallery.html`](examples/gallery.html) — **not a lesson**, the whole
-vocabulary in one page: all 20 primitives, all 7 check mechanics, every variant,
+vocabulary in one page: every primitive, all 7 check mechanics, every variant,
 filled with LLM content so the demos say something real. Open it directly and use it
 to look things up. Its readable source is
 [`skills/make-it-learnable/examples/gallery-body.html`](skills/make-it-learnable/examples/gallery-body.html);
@@ -201,7 +201,8 @@ as models.
 skills/make-it-learnable/      the packaged skill — the only thing distributed
   SKILL.md                     workflow + which primitives fit which material
   references/authoring.md      how to go from arbitrary source to a lesson
-  references/primitives.md     markup contract for all 20 primitives
+  references/primitives.md     markup contract for every primitive
+  references/visuals.md        when to draw instead of reaching for a widget
   references/quiz-modes.md     the 7 check mechanics
   assets/runtime.{css,js}      the runtime — never edited when authoring a lesson
   assets/logo.svg              the mark
