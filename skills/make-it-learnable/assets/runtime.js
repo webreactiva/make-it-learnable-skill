@@ -409,13 +409,10 @@ class ScrollStory extends HTMLElement {
     }, { rootMargin: '-45% 0px -45% 0px', threshold: 0 });
     scenes.forEach(s => io.observe(s));
 
-    let bar = null;
     const onScroll = () => {
-      bar ??= document.querySelector('.ml-progress > i');
       const y = window.scrollY, h = document.documentElement.scrollHeight - innerHeight;
       this.state.direction = y >= this._lastY ? 'forward' : 'backward'; this._lastY = y;
       this.state.progress = h > 0 ? Math.min(1, y / h) : 0;
-      if (bar) bar.style.width = (this.state.progress * 100) + '%';
       emit(this, 'story:progress', this.state);
     };
     addEventListener('scroll', onScroll, { passive: true }); onScroll();
@@ -1457,10 +1454,18 @@ document.addEventListener('DOMContentLoaded', () => paintCode());
 document.addEventListener('quiz:answered', e => paintCode(e.target));
 document.addEventListener('reveal:open', e => paintCode(e.target));
 
-/* ══ progress rail ════════════════════════════════════════════════ */
+/* ══ progress rail ════════════════════════════════════════════════
+   Owns its own scroll listener. It used to be written from inside
+   ScrollStory, which quietly made <scroll-story> mandatory: a lesson
+   without one had a rail stuck at 0% forever. */
 if (!document.querySelector('.ml-progress')) {
-  const p = el('div', 'ml-progress'); p.append(el('i'));
-  document.addEventListener('DOMContentLoaded', () => document.body.prepend(p));
-  if (document.body) document.body.prepend(p);
+  const p = el('div', 'ml-progress'), i = el('i'); p.append(i);
+  const paint = () => {
+    const h = document.documentElement.scrollHeight - innerHeight;
+    i.style.width = (h > 0 ? Math.min(1, scrollY / h) * 100 : 0) + '%';
+  };
+  const mount = () => { document.body.prepend(p); paint(); };
+  addEventListener('scroll', paint, { passive: true });
+  if (document.body) mount(); else document.addEventListener('DOMContentLoaded', mount);
 }
 })();
