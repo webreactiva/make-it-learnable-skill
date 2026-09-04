@@ -67,9 +67,10 @@ With no argument at all it asks — it has no default subject, and guessing one 
 whole build.
 
 The agent then reads the material, decides which primitives fit it, writes the lesson
-body, and builds it into a single `.html` file. Content comes out in the language of
-your source; the runtime's own chrome (buttons, verdicts, the ending card) stays in
-English.
+body, and builds it into a single `.html` file. An explicitly requested language wins;
+otherwise the request language takes precedence over the source language. The runtime
+ships in English and Spanish, and the builder prevents an accidental mixed-language
+delivery.
 
 ## What it looks like
 
@@ -165,19 +166,24 @@ You do not need the agent. Write a body fragment and build it:
     </l-section>
   </scroll-story>
 
-  <l-finish title="That's caching, honestly"></l-finish>
+  <l-finish title="That's caching, honestly">
+    <l-next><p>Next: invalidation strategies. This short lesson did not cover them.</p></l-next>
+  </l-finish>
 </div>
 ```
 
 ```bash
 python3 skills/make-it-learnable/scripts/build_lesson.py lesson-body.html -o lesson.html \
-  --title "…" --desc "…" --lang en
+  --title "…" --desc "…" --lang en \
+  --source "Source title|https://example.com/source"
 ```
 
 The build script refuses to ship broken cross-references — a `focus` target that does
 not exist, a quiz with no answer, a `l-out` using an undeclared variable — because
 those fail *silently* in a browser: the page still renders, it just stops teaching.
-Warnings (a check with no `<l-why>`, a section with no goal) are advice worth taking.
+Validation is strict by default, so pedagogical and structural warnings also stop a
+release. `--lenient` is for drafts only. Every delivered lesson records at least one
+`--source`.
 
 Check without building:
 

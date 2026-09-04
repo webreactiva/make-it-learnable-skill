@@ -668,6 +668,15 @@ l-option[data-wrong]::before{background:transparent; border-color:var(--ml-bad);
 .ml-hud:hover,.ml-hud:has(.ml-toast){opacity:1}
 @media (prefers-reduced-motion:reduce){ .ml-hud{transition:none} }
 
+/* Provenance and signature are appended by the builder. */
+.ml-sources{
+  max-width:72ch; margin:clamp(2rem,6vh,4rem) auto 0;
+  padding:1.5rem clamp(1rem,4vw,2.5rem); border-top:1px solid var(--ml-line);
+}
+.ml-sources h2{font-size:1rem; margin:0 0 .6rem}
+.ml-sources ul{margin:0; padding-left:1.2rem; color:var(--ml-muted); font-size:.9rem}
+.ml-sources a{color:var(--ml-accent); text-underline-offset:3px}
+
 /* Signature. The build script appends this to every lesson; it is not something
    a lesson body should hand-write. */
 .ml-sign{

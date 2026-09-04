@@ -10,7 +10,7 @@ part that does not exist, a quiz with no answer) fails silently in the browser:
 the page still renders, it just quietly stops teaching.
 """
 import argparse, html, re, sys
-from urllib.parse import quote
+from urllib.parse import quote, urlparse
 from html.parser import HTMLParser
 from pathlib import Path
 
@@ -42,12 +42,21 @@ class Node:
         for c in self.children: s += c.inner_text()
         return s.strip()
 
+    def closest(self, *tags):
+        node = self.parent
+        while node is not None:
+            if node.tag in tags:
+                return node
+            node = node.parent
+        return None
+
 
 class Tree(HTMLParser):
     def __init__(self):
         super().__init__(convert_charrefs=True)
         self.root = Node("#root", {}, None)
         self.cur = self.root
+        self.errors = []
     def handle_starttag(self, tag, attrs):
         n = Node(tag, {k: (v if v is not None else "") for k, v in attrs}, self.cur)
         self.cur.children.append(n)
@@ -55,10 +64,26 @@ class Tree(HTMLParser):
     def handle_startendtag(self, tag, attrs):
         self.cur.children.append(Node(tag, {k: (v if v is not None else "") for k, v in attrs}, self.cur))
     def handle_endtag(self, tag):
+        if self.cur is self.root:
+            self.errors.append(f"closing </{tag}> has no matching opening tag")
+            return
+        if self.cur.tag != tag:
+            self.errors.append(f"closing </{tag}> while <{self.cur.tag}> is still open")
         n = self.cur
         while n is not self.root and n.tag != tag: n = n.parent
-        if n is not self.root: self.cur = n.parent
+        if n is not self.root:
+            self.cur = n.parent
+        else:
+            self.errors.append(f"closing </{tag}> has no matching opening tag")
     def handle_data(self, data): self.cur.text.append(data)
+
+    def finish(self):
+        self.close()
+        node = self.cur
+        while node is not self.root:
+            self.errors.append(f"unclosed <{node.tag}>")
+            node = node.parent
+        return self.root, self.errors
 
 
 def split(s):
@@ -67,11 +92,81 @@ def split(s):
 
 NEEDS_ANSWER = {"choose", "spot"}
 OPTION_MODES = {"choose", "prediction", "estimate"}
+MATH_METHODS = {"abs", "ceil", "floor", "max", "min", "pow", "round", "sqrt"}
+FORBIDDEN_BODY_TAGS = {"base", "embed", "foreignobject", "iframe", "link", "meta", "object", "script", "style"}
+URI_ATTRS = {"href", "src", "xlink:href", "formaction"}
 
 
-def check(root):
+def parse(src):
+    tree = Tree()
+    tree.feed(src)
+    return tree.finish()
+
+
+def first_descendant(node, tag):
+    found = node.find(tag)
+    return found[0] if found else None
+
+
+def stage_for(node, stages, stage_by_id):
+    """Mirror runtime.js stageFor so validation cannot approve the wrong stage."""
+    stage_id = node.get("stage")
+    if not stage_id:
+        controller = node.closest("l-scene", "l-stepper", "l-trace")
+        if controller:
+            stage_id = controller.get("stage")
+    if stage_id:
+        return stage_by_id.get(stage_id)
+    scope = node.closest("l-section", "scroll-story", "body")
+    scoped = first_descendant(scope, "l-stage") if scope else None
+    return scoped or (stages[0] if stages else None)
+
+
+def stage_parts(stage):
+    if stage is None:
+        return set()
+    parts = {p.get("data-part") for p in stage.walk() if p.get("data-part")}
+    parts |= {n.get("id") for n in stage.find("l-node") if n.get("id")}
+    return parts
+
+
+def expression_error(expr, names):
+    """Keep reactive expressions arithmetic-only; they execute in the page."""
+    if len(expr or "") > 500:
+        return "is longer than the 500-character expression limit"
+    if not re.fullmatch(r"[\w\s.+\-*/%(),<>=!&|?:]+", expr or ""):
+        return "contains characters outside the safe arithmetic expression grammar"
+    properties = re.findall(r"\.\s*([A-Za-z_]\w*)", expr)
+    if any(prop not in MATH_METHODS for prop in properties):
+        return "uses a property other than the allowed Math helpers"
+    bare = re.sub(r"\.\s*\w+", "", expr)
+    allowed = set(names) | {"Math", "true", "false", "null"}
+    unknown = sorted(set(re.findall(r"[A-Za-z_]\w*", bare)) - allowed)
+    if unknown:
+        return f"uses undeclared name(s): {', '.join(unknown)}"
+    if "Math" in bare and not re.search(r"\bMath\s*\.", expr):
+        return "uses Math without an allowed helper"
+    return None
+
+
+def check(root, parse_errors=None):
     """Return (errors, warnings). Errors mean the lesson is broken for a learner."""
-    err, warn = [], []
+    err, warn = list(parse_errors or []), []
+
+    # The runtime must use inline JS, so CSP cannot distinguish it from an
+    # author-supplied script. Reject executable or externally loaded body markup.
+    for node in root.walk():
+        if node.tag in FORBIDDEN_BODY_TAGS:
+            err.append(f"<{node.tag}> is not allowed in a lesson body")
+        for attr, value in node.attrs.items():
+            if attr.lower().startswith("on"):
+                err.append(f"<{node.tag} {attr}=\"…\"> inline event handlers are not allowed")
+            if attr.lower() in URI_ATTRS and value:
+                parsed = urlparse(value)
+                safe_link = node.tag == "a" and (value.startswith("#") or (parsed.scheme in {"http", "https"} and parsed.netloc))
+                safe_image = node.tag == "img" and value.startswith("data:image/")
+                if not (safe_link or safe_image):
+                    err.append(f"<{node.tag} {attr}=\"{value}\"> is not a safe self-contained URL")
 
     # ── ids
     seen = {}
@@ -82,18 +177,27 @@ def check(root):
             seen[i] = n.tag
 
     stages = root.find("l-stage")
-    parts = {p.get("data-part") for st in stages for p in st.walk() if p.get("data-part")}
-    parts |= {n.get("id") for st in stages for n in st.find("l-node") if n.get("id")}
-    stage_ids = {s.get("id") for s in stages if s.get("id")}
+    stage_by_id = {s.get("id"): s for s in stages if s.get("id")}
+
+    for stage in stages:
+        seen_parts = set()
+        for part in [p.get("data-part") for p in stage.walk() if p.get("data-part")]:
+            if part in seen_parts:
+                err.append(f"<l-stage id=\"{stage.get('id', '?')}\"> has duplicate data-part=\"{part}\"")
+            seen_parts.add(part)
 
     # ── control primitives point at something that exists
     for n in root.find("l-scene", "l-focus", "l-reveal", "l-step", "l-tstep"):
+        stage = stage_for(n, stages, stage_by_id)
+        parts = stage_parts(stage)
         for attr in ("focus", "reveal", "target"):
             for t in split(n.get(attr)):
-                if parts and t not in parts:
-                    err.append(f"<{n.tag} {attr}=\"{t}\"> — no [data-part=\"{t}\"] inside any <l-stage>")
+                if stage is None:
+                    err.append(f"<{n.tag} {attr}=\"{t}\"> — no <l-stage> can receive this effect")
+                elif t not in parts:
+                    err.append(f"<{n.tag} {attr}=\"{t}\"> — target does not exist in resolved <l-stage id=\"{stage.get('id', '?')}\">")
         sid = n.get("stage")
-        if sid and sid not in stage_ids:
+        if sid and sid not in stage_by_id:
             err.append(f"<{n.tag} stage=\"{sid}\"> — no <l-stage id=\"{sid}\">")
 
     if root.find("l-scene") and not stages:
@@ -114,10 +218,7 @@ def check(root):
     for l in root.find("l-layer"):
         names = set(split(l.get("layers")))
         if not names: err.append("<l-layer> needs a layers=\"a b c\" attribute")
-        st = None
-        sid = l.get("stage")
-        for s in stages:
-            if (sid and s.get("id") == sid) or (not sid and st is None): st = s
+        st = stage_for(l, stages, stage_by_id)
         if st:
             have = {x.get("data-layer") for x in st.walk() if x.get("data-layer")}
             for m in names - have:
@@ -185,12 +286,20 @@ def check(root):
         if mode == "explain":
             if not q.find("l-key") and not q.find("l-reference"):
                 warn.append(f"{where} free-text with no <l-key> or <l-reference> — the learner gets no feedback")
-        if mode == "prediction" and not (q.find("l-actual") or q.find("l-why")):
-            warn.append(f"{where} without <l-actual> — a prediction with nothing to contrast against")
-        if not q.find("l-why") and mode != "explain":
-            warn.append(f"{where} has no <l-why> — being told 'wrong' without why teaches nothing")
+        if mode == "prediction" and not q.find("l-actual"):
+            err.append(f"{where} needs <l-actual> — prediction must contrast expectation with reality")
+        if not q.find("l-why") and not (mode == "explain" and q.find("l-reference")):
+            err.append(f"{where} has no explanatory feedback (<l-why>, or <l-reference> for explain)")
+        answers = {a.lower() for a in split(q.get("answer"))}
+        option_values = [(o.get("value") or "ABCDEFGH"[i]).strip().lower() for i, o in enumerate(opts)]
+        miss_values = {m.get("for", "").strip().lower() for m in q.find("l-miss")}
+        for value in option_values:
+            if value not in answers and value not in miss_values:
+                err.append(f"{where} wrong option '{value}' needs <l-miss for=\"{value}\">")
         for m in q.find("l-miss"):
             if not m.get("for"): err.append(f"{where} <l-miss> needs for=\"<option value>\"")
+            elif m.get("for").strip().lower() not in option_values:
+                err.append(f"{where} <l-miss for=\"{m.get('for')}\"> matches no option")
 
     # ── what-if expressions reference declared variables
     for w in root.find("l-whatif"):
@@ -202,11 +311,9 @@ def check(root):
             e = o.get("expr")
             if not e: err.append(f"<l-out name=\"{o.get('name')}\"> needs expr=\"…\"")
             else:
-                # drop property accesses so Math.round does not read as a variable "round"
-                bare = re.sub(r"\.\s*\w+", "", e)
-                for word in set(re.findall(r"[A-Za-z_]\w*", bare)) - {"Math", "true", "false", "null"}:
-                    if word not in names and not word.isupper():
-                        err.append(f"<l-out expr=\"{e}\"> uses '{word}', which is not a <l-var name>")
+                issue = expression_error(e, names)
+                if issue:
+                    err.append(f"<l-out expr=\"{e}\"> {issue}")
         if not pick("l-out"): err.append("<l-whatif> has no <l-out> — nothing observable changes")
 
     # ── structural sanity
@@ -233,6 +340,14 @@ def check(root):
     if not root.find("l-checkpoint"): warn.append("no <l-checkpoint> anywhere — the lesson never consolidates")
     if not root.find("l-quiz"): warn.append("no <l-quiz> anywhere — this is a document, not a lesson")
     if not root.find("l-finish"): warn.append("no <l-finish> — the lesson stops instead of ending")
+    for finish in root.find("l-finish"):
+        if not finish.find("l-next"):
+            err.append("<l-finish> needs <l-next> — the lesson must state its honest scope and next step")
+    shells = [n for n in root.find("div") if "ml-shell" in split(n.get("class"))]
+    if len(shells) != 1:
+        err.append(f"lesson body needs exactly one <div class=\"ml-shell\"> (found {len(shells)})")
+    elif not shells[0].find("header"):
+        err.append(".ml-shell needs a <header class=\"ml-hero\">")
     for w in root.find("l-whatif"):
         if w.has("inline") and not w.find("l-var"):
             err.append("<l-whatif inline> has no <l-var> inside the prose")
@@ -259,6 +374,7 @@ PAGE = """<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title}</title>
 <meta name="description" content="{desc}">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; connect-src 'none'; worker-src blob:; frame-src 'self'; base-uri 'none'; form-action 'none'">
 <link rel="icon" href="{icon}">
 <style>
 {css}
@@ -266,6 +382,10 @@ PAGE = """<!doctype html>
 </head>
 <body>
 {body}
+<aside class="ml-sources" aria-label="{sources_title}">
+  <h2>{sources_title}</h2>
+  <ul>{sources}</ul>
+</aside>
 <footer class="ml-sign">
   <img src="{icon}" alt="" width="22" height="22">
   <p>Created with <span role="img" aria-label="orange heart">\U0001f9e1</span> by
@@ -293,19 +413,46 @@ def main():
     ap.add_argument("--title", default="Lesson")
     ap.add_argument("--desc", default="")
     ap.add_argument("--lang", default="en")
+    ap.add_argument("--source", action="append", default=[], metavar="LABEL|URL",
+                    help="source provenance; repeat for multiple sources")
     ap.add_argument("--check-only", action="store_true")
-    ap.add_argument("--strict", action="store_true", help="treat warnings as errors")
+    ap.add_argument("--strict", action="store_true", help="deprecated: strict validation is now the default")
+    ap.add_argument("--lenient", action="store_true", help="allow advisory warnings while drafting")
     a = ap.parse_args()
 
     src = Path(a.body).read_text(encoding="utf-8")
-    t = Tree(); t.feed(src)
-    err, warn = check(t.root)
+    root, parse_errors = parse(src)
+    err, warn = check(root, parse_errors)
+
+    if not a.check_only and not a.source:
+        err.append("at least one --source is required (use a plain label for general knowledge)")
+    if not a.check_only and (a.title == "Lesson" or not a.desc.strip()):
+        err.append("shipping a lesson requires explicit --title and --desc metadata")
+    if a.lang.lower().split("-")[0] not in {"en", "es"}:
+        err.append(f"--lang {a.lang!r} has no complete STRINGS block in assets/runtime.js")
+
+    source_items = []
+    for raw in a.source:
+        label, sep, url = raw.partition("|")
+        label = html.escape(label.strip())
+        if not label:
+            err.append("--source needs a non-empty label")
+            continue
+        if sep and url.strip():
+            parsed = urlparse(url.strip())
+            if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+                err.append(f"--source URL must be absolute http(s): {url.strip()!r}")
+                continue
+            safe_url = html.escape(url.strip(), quote=True)
+            source_items.append(f'<li><a href="{safe_url}" rel="noopener noreferrer">{label}</a></li>')
+        else:
+            source_items.append(f"<li>{label}</li>")
 
     for e in err: print(f"  ERROR  {e}", file=sys.stderr)
     for w in warn: print(f"  warn   {w}", file=sys.stderr)
     print(f"\n{len(err)} error(s), {len(warn)} warning(s)", file=sys.stderr)
 
-    if err or (a.strict and warn):
+    if err or (warn and not a.lenient):
         print("Fix these before shipping the lesson.", file=sys.stderr)
         if not a.check_only: sys.exit(1)
         sys.exit(1)
@@ -319,6 +466,8 @@ def main():
         css=(ASSETS / "runtime.css").read_text(encoding="utf-8"),
         js=(ASSETS / "runtime.js").read_text(encoding="utf-8"),
         body=src,
+        sources_title="Fuentes" if a.lang.lower().startswith("es") else "Sources",
+        sources="".join(source_items),
     ), encoding="utf-8")
     print(f"Wrote {out} ({out.stat().st_size // 1024} KB, self-contained)", file=sys.stderr)
 

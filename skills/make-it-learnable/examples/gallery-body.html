@@ -564,8 +564,12 @@ console.log("piezas:", piezas.length, "· caracteres:", texto.length);
     <l-option value="b">Entre 1 y 5 segundos</l-option>
     <l-option value="c">Alrededor de 10 segundos</l-option>
     <l-option value="d">Más de un minuto</l-option>
+    <l-miss for="a">El streaming puede mostrar el primer token en menos de un segundo,
+    pero producir los 500 sigue requiriendo diez segundos a este ritmo.</l-miss>
     <l-miss for="b">Ese es el orden de magnitud del <em>primer</em> token, no el de la
     respuesta completa.</l-miss>
+    <l-miss for="d">Estás tratando los 50 tokens por segundo como si fueran 50 tokens
+    por minuto. A esa velocidad, 500 tokens son diez segundos.</l-miss>
     <l-why><p>500 ÷ 50 = 10 segundos. Con streaming el usuario ve la primera palabra casi
     enseguida, y esa es la razón de que el streaming importe tanto: la espera total no
     baja, pero la espera <em>percibida</em> sí.</p></l-why>

@@ -68,9 +68,10 @@ quién es, ajusta el nivel a esa persona. Sin ningún argumento te pregunta: no 
 tema por defecto, y adivinarlo te costaría una lección entera tirada.
 
 A partir de ahí el agente lee el material, decide qué primitivas le encajan, escribe
-el cuerpo de la lección y la construye en un único `.html`. El contenido sale en el
-idioma de tu fuente; los textos propios del runtime (botones, veredictos, la tarjeta
-final) siguen en inglés.
+el cuerpo de la lección y la construye en un único `.html`. Un idioma que pidas
+explícitamente tiene prioridad; después manda el idioma de tu petición y, por último,
+el de la fuente. El runtime incluye español e inglés y el builder impide entregar una
+mezcla accidental.
 
 ## Qué pinta tiene
 
@@ -169,20 +170,24 @@ No hace falta el agente. Escribe un fragmento de cuerpo y constrúyelo:
     </l-section>
   </scroll-story>
 
-  <l-finish title="Esto es cachear, en serio"></l-finish>
+  <l-finish title="Esto es cachear, en serio">
+    <l-next><p>Siguiente paso: invalidación. Esta lección corta no la cubre.</p></l-next>
+  </l-finish>
 </div>
 ```
 
 ```bash
 python3 skills/make-it-learnable/scripts/build_lesson.py lesson-body.html -o lesson.html \
-  --title "…" --desc "…" --lang es
+  --title "…" --desc "…" --lang es \
+  --source "Título de la fuente|https://example.com/fuente"
 ```
 
 El script de build se niega a publicar referencias cruzadas rotas — un `focus` que
 apunta a algo que no existe, un quiz sin respuesta, un `l-out` con una variable no
 declarada — porque esas cosas fallan *en silencio* en el navegador: la página se
-sigue viendo, simplemente deja de enseñar. Los avisos (una comprobación sin
-`<l-why>`, una sección sin objetivo) son consejos que conviene hacer caso.
+sigue viendo, simplemente deja de enseñar. La validación es estricta por defecto:
+los fallos pedagógicos y estructurales también detienen la entrega. `--lenient` queda
+reservado para borradores. Cada lección terminada incluye al menos un `--source`.
 
 Comprobar sin construir:
 
