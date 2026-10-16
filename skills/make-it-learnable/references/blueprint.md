@@ -229,8 +229,9 @@ Treat any failure as a broken lesson, not a style note.
   BigNumber; captions ≤ 25 words.
 - `Picture`: a Drawing and a caption ≤ 15 words. `Analogy`: both drawings, 2+
   pairs, each pair naming a part that exists in its drawing.
-- Every section's first block is a `Picture`, a `Story` or an `Analogy` (a
-  section that opens with a check may put the drawing right after it); the
+- Every section's first block is a `Picture`, `Panels`, a `Story` or an
+  `Analogy` (a section that opens with a check may put the drawing right after
+  it; a section that is only a `Checkpoint` needs none); the
   lesson has at least one `Analogy`; anything that goes somewhere travels in a
   `Story` with `pose`.
 - **Word budget**: no prose block over ~60 words; more pictures (Picture,

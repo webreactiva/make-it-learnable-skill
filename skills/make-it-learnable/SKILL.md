@@ -123,7 +123,9 @@ this subject could have produced.
 These are always present, whatever the topic:
 
 - a `Section` with a real goal for each idea, and **every section opens with a
-  big drawing** — a `Picture`, a `Story` or an `Analogy` — before any paragraph;
+  big drawing** — a `Picture`, `Panels`, a `Story` or an `Analogy` — before any
+  paragraph (a section that opens with a check, or that is only a `Checkpoint`,
+  is the exception);
 - at least one `Analogy`, where the reader first meets the central concept;
 - wherever something goes somewhere (a request, a packet, a message in a
   handshake, a planet, money, a token), a `Story` in which that one thing **travels** from scene to scene with
