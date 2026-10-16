@@ -280,6 +280,42 @@ la skill. Los tokens se suman desde la transcripción de cada subagente.
 ¹ Las transcripciones se quedan cortas en la salida de estas ejecuciones: cada una
 escribió una página de 80–90 KB, que son decenas de miles de tokens de salida.
 
+### En gráficas
+
+```mermaid
+xychart-beta
+    title "opencode: coste estimado por lección"
+    x-axis ["K3 r1", "GLM r1", "DS r1", "MM r1", "GLM r2", "DS r2", "MM r2", "Muse r3", "Muse r4", "Muse r5", "Muse r6", "DS r6", "MM r6"]
+    y-axis "USD" 0 --> 4
+    bar [2.76, 3.47, 0.20, 0.37, 0.30, 0.20, 3.22, 0.36, 0.46, 0.43, 0.30, 0.39, 1.40]
+```
+
+```mermaid
+xychart-beta
+    title "opencode: tokens de salida por lección"
+    x-axis ["K3 r1", "GLM r1", "DS r1", "MM r1", "GLM r2", "DS r2", "MM r2", "Muse r3", "Muse r4", "Muse r5", "Muse r6", "DS r6", "MM r6"]
+    y-axis "miles de tokens" 0 --> 180
+    bar [80.9, 166.4, 45.1, 63.6, 33.1, 47.6, 113.8, 30.1, 34.3, 39.8, 27.2, 91.7, 59.8]
+```
+
+```mermaid
+xychart-beta
+    title "Lectura de caché por lección, todas las ejecuciones"
+    x-axis ["K3 r1", "GLM r1", "DS r1", "MM r1", "GLM r2", "DS r2", "MM r2", "Muse r3", "Muse r4", "Muse r5", "Muse r6", "DS r6", "MM r6", "Opus", "Haiku", "Son r2", "Son r6", "Son caché", "Son ctx", "Son deuda"]
+    y-axis "millones de tokens" 0 --> 25
+    bar [3.53, 8.10, 0.34, 1.38, 0.26, 1.64, 23.54, 0.70, 1.27, 0.88, 0.48, 2.45, 9.94, 1.69, 2.63, 1.56, 2.57, 5.13, 5.46, 5.04]
+```
+
+```mermaid
+xychart-beta
+    title "Tiempo de reloj por lección, todas las ejecuciones"
+    x-axis ["K3 r1", "GLM r1", "DS r1", "MM r1", "GLM r2", "DS r2", "MM r2", "Muse r3", "Muse r4", "Muse r5", "Muse r6", "DS r6", "MM r6", "Opus", "Haiku", "Son r2", "Son r6", "Son caché", "Son ctx", "Son deuda"]
+    y-axis "minutos" 0 --> 40
+    bar [16, 36, 5, 6, 6, 5, 30, 4, 4, 8, 3, 20, 10, 8, 10, 9, 13, 11, 10, 11]
+```
+
+Etiquetas: modelo y ronda — K3 Kimi K3, GLM GLM 5.3, DS DeepSeek V4 Pro, MM MiniMax M3, Muse Muse Spark Open, Son Sonnet 5.5 (r2 y r6 son la lección de las estaciones; *caché*, *ctx* y *deuda* son caché de tokens, ventana de contexto y deuda cognitiva). La salida de Claude no entra en la gráfica de salida porque tres de sus transcripciones la registran por debajo.
+
 **Qué dicen los números.** Una lección cuesta más o menos 100–250k tokens de
 entrada nueva y 30–110k de salida, sea cual sea el modelo; lo que se dispara es
 la lectura de caché, que crece con cada vuelta extra que un modelo da releyendo

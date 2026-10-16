@@ -274,6 +274,42 @@ Tokens are summed from each subagent's transcript.
 ¹ The transcripts under-report these runs' output: each wrote a page of 80–90 KB,
 which is tens of thousands of output tokens.
 
+### In charts
+
+```mermaid
+xychart-beta
+    title "opencode: estimated cost per lesson"
+    x-axis ["K3 r1", "GLM r1", "DS r1", "MM r1", "GLM r2", "DS r2", "MM r2", "Muse r3", "Muse r4", "Muse r5", "Muse r6", "DS r6", "MM r6"]
+    y-axis "USD" 0 --> 4
+    bar [2.76, 3.47, 0.20, 0.37, 0.30, 0.20, 3.22, 0.36, 0.46, 0.43, 0.30, 0.39, 1.40]
+```
+
+```mermaid
+xychart-beta
+    title "opencode: output tokens per lesson"
+    x-axis ["K3 r1", "GLM r1", "DS r1", "MM r1", "GLM r2", "DS r2", "MM r2", "Muse r3", "Muse r4", "Muse r5", "Muse r6", "DS r6", "MM r6"]
+    y-axis "thousands of tokens" 0 --> 180
+    bar [80.9, 166.4, 45.1, 63.6, 33.1, 47.6, 113.8, 30.1, 34.3, 39.8, 27.2, 91.7, 59.8]
+```
+
+```mermaid
+xychart-beta
+    title "Cache read per lesson, all runs"
+    x-axis ["K3 r1", "GLM r1", "DS r1", "MM r1", "GLM r2", "DS r2", "MM r2", "Muse r3", "Muse r4", "Muse r5", "Muse r6", "DS r6", "MM r6", "Opus", "Haiku", "Son r2", "Son r6", "Son caché", "Son ctx", "Son deuda"]
+    y-axis "millions of tokens" 0 --> 25
+    bar [3.53, 8.10, 0.34, 1.38, 0.26, 1.64, 23.54, 0.70, 1.27, 0.88, 0.48, 2.45, 9.94, 1.69, 2.63, 1.56, 2.57, 5.13, 5.46, 5.04]
+```
+
+```mermaid
+xychart-beta
+    title "Wall-clock time per lesson, all runs"
+    x-axis ["K3 r1", "GLM r1", "DS r1", "MM r1", "GLM r2", "DS r2", "MM r2", "Muse r3", "Muse r4", "Muse r5", "Muse r6", "DS r6", "MM r6", "Opus", "Haiku", "Son r2", "Son r6", "Son caché", "Son ctx", "Son deuda"]
+    y-axis "minutes" 0 --> 40
+    bar [16, 36, 5, 6, 6, 5, 30, 4, 4, 8, 3, 20, 10, 8, 10, 9, 13, 11, 10, 11]
+```
+
+Labels: model and round — K3 Kimi K3, GLM GLM 5.3, DS DeepSeek V4 Pro, MM MiniMax M3, Muse Muse Spark Open, Son Sonnet 5.5 (r2 and r6 are the seasons lesson; *caché*, *ctx* and *deuda* are prompt caching, context window and cognitive debt). Claude output tokens are left out of the output chart because three of its transcripts under-report them.
+
 **What the numbers say.** A lesson costs roughly 100–250k fresh input tokens and
 30–110k output tokens whatever the model; what varies wildly is cache reads,
 which grow with every extra turn a model spends re-reading its own context
