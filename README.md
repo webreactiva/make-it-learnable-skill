@@ -22,26 +22,16 @@ bolted on the end.
 
 ## Install
 
-**Try it in one project first.** Attach `make-it-learnable.zip` and ask your agent, in
-plain language:
-
-```
-Install this skill in this project so I can use it @make-it-learnable.zip
-```
-
-It unpacks the skill into the project — `.claude/skills/` for Claude Code,
-`.agents/skills/` for other agents — and it is there from the next prompt on.
-
-**Or do it yourself**, from the project root:
-
 ```bash
-unzip make-it-learnable.zip -d .claude/skills/   # Claude Code
-unzip make-it-learnable.zip -d .agents/skills/   # other agents
+npx skills add webreactiva/make-it-learnable-skill
 ```
 
-Once a couple of lessons have convinced you, install it for every project: copy that
-same `make-it-learnable/` folder into `~/.claude/skills/` (or `~/.agents/skills/`).
-From a clone of this repo the folder to copy is `skills/make-it-learnable/`.
+That is the recommended way: it installs the skill for your agent and it is there from
+the next prompt on.
+
+**Or copy it by hand.** From a clone of this repo, copy the `skills/` folder into
+`.agents/` at your project root, so the skill ends up in
+`.agents/skills/make-it-learnable/`.
 
 Requirements: an agent that can write files, and a current browser to open the result.
 The skill ships no code to install: no runtime, no build script, nothing to compile and
@@ -195,8 +185,6 @@ skills/make-it-learnable/      the packaged skill — the only thing distributed
   assets/favicon.svg           the mark at 32, inlined into every lesson
 reference-implementation/      the HTML runtime + builder the contracts describe
 tests/                         tests for the reference builder
-package-skill.sh               builds make-it-learnable.zip for distribution
-make-it-learnable.zip          the artefact you hand to someone else (git-ignored)
 examples/                      built lessons, open them in a browser
 assets/                        the logo and the screenshots in this README
 ```

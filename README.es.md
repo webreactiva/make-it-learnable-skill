@@ -22,27 +22,16 @@ deck con un test pegado al final.
 
 ## Instalación
 
-**Pruébala primero en un proyecto.** Adjunta `make-it-learnable.zip` y díselo a tu
-agente en lenguaje normal:
-
-```
-Instala esta skill en este proyecto para poder usarla @make-it-learnable.zip
-```
-
-Te la deja dentro del proyecto — `.claude/skills/` en Claude Code, `.agents/skills/` en
-otros agentes — y ya la tienes disponible en el siguiente mensaje.
-
-**O lo haces tú**, desde la raíz del proyecto:
-
 ```bash
-unzip make-it-learnable.zip -d .claude/skills/   # Claude Code
-unzip make-it-learnable.zip -d .agents/skills/   # otros agentes
+npx skills add webreactiva/make-it-learnable-skill
 ```
 
-Cuando un par de lecciones te hayan convencido, instálala para todos los proyectos:
-copia esa misma carpeta `make-it-learnable/` en `~/.claude/skills/` (o
-`~/.agents/skills/`). Si te has clonado el repo, la carpeta a copiar es
-`skills/make-it-learnable/`.
+Es la forma recomendada: instala la skill para tu agente y la tienes disponible en el
+siguiente mensaje.
+
+**O cópiala a mano.** Desde un clon de este repo, copia la carpeta `skills/` dentro de
+`.agents/` en la raíz de tu proyecto, para que la skill quede en
+`.agents/skills/make-it-learnable/`.
 
 Requisitos: un agente que pueda escribir archivos y un navegador actual para abrir el
 resultado. La skill no trae código que instalar: ni runtime, ni script de build, nada
@@ -198,8 +187,6 @@ skills/make-it-learnable/      la skill empaquetada — lo único que se distrib
   assets/favicon.svg           la marca a 32, incrustada en cada lección
 reference-implementation/      el runtime HTML + builder que describen los contratos
 tests/                         tests del builder de referencia
-package-skill.sh               genera make-it-learnable.zip para distribuir
-make-it-learnable.zip          el artefacto que le pasas a otra persona (ignorado en git)
 examples/                      lecciones construidas, ábrelas en el navegador
 assets/                        el logo y las capturas de este README
 ```
