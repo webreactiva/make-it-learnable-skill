@@ -274,9 +274,11 @@ la skill. Los tokens se suman desde la transcripción de cada subagente.
 | Ronda 2 | Sonnet 5.5 | estaciones | 34 | 161.382 | 1.564.496 | 45.159 | 17 | 9 min | story ancha, pero panels en 3 columnas |
 | Ronda 6 (skill final) | Sonnet 5.5 | estaciones | 40 | 214.800 | 2.567.365 | 1.902¹ | 20 | 13 min | el mejor resultado: una Tierra que recorre la órbita, todo limpio |
 | Ronda 6 (skill final) | Sonnet 5.5 | caché de tokens | 68 | 209.885 | 5.132.561 | 35.573 | 34 | 11 min | fuentes consultadas en la web; limpia en escritorio y móvil |
+| v1.0.0 | Sonnet 5.5 | ventana de contexto de los agentes | 76 | 209.547 | 5.455.590 | 821¹ | 38 | 10 min | fuentes propias (docs de Anthropic, *Lost in the Middle*); limpia en escritorio y móvil |
+| v1.0.0 | Sonnet 5.5 | deuda cognitiva del developer con IA | 62 | 229.322 | 5.037.828 | 1.588¹ | 31 | 11 min | construida con contenido de Web Reactiva (búsqueda MCP + blog); limpia en escritorio y móvil |
 
-¹ La transcripción se queda corta en la salida de esta ejecución: escribió una
-página de 80 KB, que son decenas de miles de tokens de salida.
+¹ Las transcripciones se quedan cortas en la salida de estas ejecuciones: cada una
+escribió una página de 80–90 KB, que son decenas de miles de tokens de salida.
 
 **Qué dicen los números.** Una lección cuesta más o menos 100–250k tokens de
 entrada nueva y 30–110k de salida, sea cual sea el modelo; lo que se dispara es

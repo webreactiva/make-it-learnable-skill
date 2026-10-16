@@ -268,9 +268,11 @@ Tokens are summed from each subagent's transcript.
 | Round 2 | Sonnet 5.5 | seasons | 34 | 161,382 | 1,564,496 | 45,159 | 17 | 9 min | wide story, but panels squeezed into 3 columns |
 | Round 6 (final skill) | Sonnet 5.5 | seasons | 40 | 214,800 | 2,567,365 | 1,902¹ | 20 | 13 min | best result: one Earth travelling the orbit, all checks clean |
 | Round 6 (final skill) | Sonnet 5.5 | prompt caching | 68 | 209,885 | 5,132,561 | 35,573 | 34 | 11 min | sources checked online; clean on desktop and phone |
+| v1.0.0 | Sonnet 5.5 | AI agents' context window | 76 | 209,547 | 5,455,590 | 821¹ | 38 | 10 min | own sources (Anthropic docs, *Lost in the Middle*); clean on desktop and phone |
+| v1.0.0 | Sonnet 5.5 | developers' cognitive debt with AI | 62 | 229,322 | 5,037,828 | 1,588¹ | 31 | 11 min | built from Web Reactiva's own content (MCP search + blog); clean on desktop and phone |
 
-¹ The transcript under-reports this run's output: it wrote an 80 KB page, which is
-tens of thousands of output tokens.
+¹ The transcripts under-report these runs' output: each wrote a page of 80–90 KB,
+which is tens of thousands of output tokens.
 
 **What the numbers say.** A lesson costs roughly 100–250k fresh input tokens and
 30–110k output tokens whatever the model; what varies wildly is cache reads,
