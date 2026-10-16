@@ -44,9 +44,14 @@
      block that has drifted off centre, so "the console is clean" covers it. */
   addEventListener('load', () => {
     const vw = innerWidth;   // what 100vw measures, scrollbar included
-    document.querySelectorAll('svg[role="img"]').forEach(svg => {
+    /* Every svg bigger than an icon is a drawing: it needs its accessible
+       label and an edge-to-edge block around it. */
+    document.querySelectorAll('svg').forEach(svg => {
+      if (svg.getBoundingClientRect().width < 200 || svg.closest('[aria-hidden="true"]')) return;
+      if (svg.getAttribute('role') !== 'img' || !svg.getAttribute('aria-label'))
+        console.warn('[layout] drawing without role="img" and an aria-label:', svg);
       const wide = svg.closest('[data-wide]');
-      if (!wide) return console.warn('[layout] drawing outside an edge-to-edge block:', svg.getAttribute('aria-label'));
+      if (!wide) return console.warn('[layout] drawing outside a data-wide block:', svg);
       const r = wide.getBoundingClientRect();
       if (Math.abs(r.left) > 1 || Math.abs(r.width - vw) > 1) console.warn('[layout] block is not edge to edge:', wide);
     });
@@ -54,6 +59,18 @@
       const r = el.getBoundingClientRect();
       if (r.width && !el.querySelector('[data-wide]') && Math.abs(r.left - (vw - r.right)) > 2)
         console.warn('[layout] block is off centre:', el);
+    });
+    /* Stories: the stage fills the screen and each scene is a screen tall, so
+       only one text is ever over the drawing. Needs data-story, data-stage and
+       data-scene, as in story.html. */
+    document.querySelectorAll('[data-story]').forEach(story => {
+      const stage = story.querySelector('[data-stage]');
+      if (stage && stage.getBoundingClientRect().height < innerHeight * 0.95)
+        console.warn('[layout] story stage is shorter than the screen:', stage);
+      story.querySelectorAll('[data-scene]').forEach(sc => {
+        if (sc.getBoundingClientRect().height < innerHeight * 0.95)
+          console.warn('[layout] scene is shorter than the screen, so two texts overlap the stage:', sc);
+      });
     });
   });
 </script>
