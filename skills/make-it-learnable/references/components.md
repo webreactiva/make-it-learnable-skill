@@ -181,7 +181,9 @@ the effects it applies (`focus`, `reveal`, `state`, `pose`, `step`, `layers`,
     reads well at that size.
 
   Never put the stage above the scenes and let it scroll away, and never pin a
-  stage so tall that no scene text fits beside or over it.
+  stage so tall that no scene text fits beside or over it. The drawing fills the stage
+  it is pinned in: drawn in the stage's proportion, with its parts spread over
+  the full height — not a thin strip across the middle of an empty screen.
 - **The stage acts, the text follows.** Every scene changes something the
   reader can *see* on the stage — something moves, appears, fills, turns, lights
   up. A scene whose only change is its text is not a scene: merge it.
