@@ -1,4 +1,4 @@
-<img src="skills/make-it-learnable/assets/logo.svg" alt="" width="96" height="96">
+<img src="assets/logo.svg" alt="" width="96" height="96">
 
 # make-it-learnable
 
@@ -44,9 +44,9 @@ copia esa misma carpeta `make-it-learnable/` en `~/.claude/skills/` (o
 `~/.agents/skills/`). Si te has clonado el repo, la carpeta a copiar es
 `skills/make-it-learnable/`.
 
-Requisitos: **Python 3** (solo librería estándar) y un navegador con `:has()` en CSS —
-Chrome 105+, Safari 15.4+, Firefox 121+. El runtime son custom elements y CSS a pelo;
-no hay nada que compilar ni nada que instalar con `npm`.
+Requisitos: un agente que pueda escribir archivos y un navegador actual para abrir el
+resultado. La skill no trae código que instalar: ni runtime, ni script de build, nada
+que compilar ni nada que instalar con `npm`.
 
 ## Cómo se usa
 
@@ -67,11 +67,11 @@ transcripción**, o simplemente **un tema** contado con palabras. Si además dic
 quién es, ajusta el nivel a esa persona. Sin ningún argumento te pregunta: no tiene
 tema por defecto, y adivinarlo te costaría una lección entera tirada.
 
-A partir de ahí el agente lee el material, decide qué primitivas le encajan, escribe
-el cuerpo de la lección y la construye en un único `.html`. Un idioma que pidas
-explícitamente tiene prioridad; después manda el idioma de tu petición y, por último,
-el de la fuente. El runtime incluye español e inglés y el builder impide entregar una
-mezcla accidental.
+A partir de ahí el agente lee el material, decide qué componentes le encajan, escribe
+un **blueprint** de la lección, lo revisa y construye a partir de él un único `.html`.
+Un idioma que pidas explícitamente tiene prioridad; después manda el idioma de tu
+petición y, por último, el de la fuente. Los textos de la interfaz están especificados
+en español e inglés, y nunca se entrega una página con mezcla de idiomas.
 
 ## Qué pinta tiene
 
@@ -95,134 +95,113 @@ real y estimar un orden de magnitud son preguntas distintas, y fallan de otra ma
 
 ## Qué construye
 
-Un fichero `.html`, unos 110 KB, que respeta el tema del sistema, es accesible por
-teclado y se imprime bien.
+Un único `.html`, que respeta el tema claro/oscuro, se usa con teclado y se imprime bien.
 
-Una lección son **secciones**, cada una con su objetivo declarado, envueltas en un
-**scroll-story** que convierte la posición del scroll en tiempo narrativo. Un
-**escenario** (`l-stage`) sostiene una única representación persistente — un diagrama,
-una traza, un trozo de estado — y las escenas la transforman según se avanza, en vez
-de meter una imagen nueva cada vez. Las **comprobaciones** interrumpen en el momento
-justo, y una tarjeta **final** cierra la lección diciendo qué merece un repaso.
+Una lección se compone de **secciones**, cada una con un objetivo declarado. Un
+**escenario** (stage) sostiene una representación persistente —un diagrama, una traza,
+un trozo de estado— y las escenas de una **historia** la transforman a medida que el
+lector hace scroll, en vez de cambiar de dibujo cada vez. Las **comprobaciones**
+interrumpen en el momento justo y una tarjeta de **cierre** termina la lección diciendo
+qué repasar.
+
+### Cómo funciona la skill: blueprint + contratos
+
+La skill **no contiene marcado, ni hoja de estilos, ni script**. A cambio le da al
+agente dos cosas:
+
+- **Un formato de blueprint** ([`references/blueprint.md`](skills/make-it-learnable/references/blueprint.md))
+  — un plan en YAML de la lección que nombra cada componente, en orden, con todas sus
+  entradas: enunciados, respuestas, errores típicos, explicaciones, partes del
+  escenario, efectos, fuentes. Ahí se comprueban las referencias cruzadas, antes de
+  que exista código.
+- **Contratos de componente** ([`components.md`](skills/make-it-learnable/references/components.md),
+  [`checks.md`](skills/make-it-learnable/references/checks.md),
+  [`runtime.md`](skills/make-it-learnable/references/runtime.md)) — para cada pieza,
+  para qué sirve, qué recibe, cómo se comporta (números, umbrales, textos, teclado) y
+  qué tiene que cumplirse al entregarla.
+
+El agente escribe la página a su manera a partir de esas dos cosas. Dos lecciones
+pueden no parecerse en nada por dentro y tienen que comportarse igual por fuera.
 
 ### El vocabulario
 
-Las primitivas, agrupadas por lo que hacen. Dos son modos narrativos y se elige uno por tramo de la lección: `scroll-story` mantiene un objeto en pantalla y lo transforma con escenas, `l-panels` encadena dibujos a todo ancho con una frase encima. Más el runtime `scroll-story` en el
-que viven (con sus escenas `l-scene`) y la tarjeta `l-finish` que cierra la lección.
-Una buena lección usa **entre cuatro y siete**: elegir el puñado correcto es el
-verdadero acto de criterio, y usar más es ruido, no exhaustividad.
+Los componentes, agrupados por lo que hacen. Dos son modos narrativos y eliges uno por
+tramo de la lección: `Story` mantiene un objeto en pantalla y lo transforma escena a
+escena; `Panels` encadena dibujos a todo el ancho con una frase encima de cada uno.
+Una buena lección usa **entre cuatro y siete**: elegir el puñado correcto es el acto de
+criterio principal, y usar más es ruido, no exhaustividad.
 
-| Familia | Primitivas |
+| Familia | Componentes |
 |---|---|
-| Estructura | `l-section` · `l-stack` · `l-split` · `l-stage` · `l-draw` |
-| Narrativa | `l-panels` · `l-stepper` · `l-branch` — y el runtime `scroll-story` con sus escenas `l-scene` |
-| Atención | `l-focus` · `l-reveal` · `l-layer` · `l-anatomy` · `l-compare` |
-| Comportamiento | `l-transform` · `l-flow` · `l-trace` · `l-state` |
-| Experimento | `l-whatif` (panel o documento reactivo) · `l-sandbox` · `l-lab` |
-| Aprendizaje | `l-quiz` · `l-contrast` · `l-checkpoint` — y `l-finish` para terminar |
-
-Contrato de marcado completo: [`references/primitives.md`](skills/make-it-learnable/references/primitives.md).
+| Estructura | `Section` · `Stack` · `Split` · `Stage` · `Drawing` |
+| Narrativa | `Story` + `Scene` · `Panels` · `Stepper` · `Branch` |
+| Atención | `Focus` · `Reveal` · `Layers` · `Anatomy` · `Compare` |
+| Comportamiento | `Transform` · `Flow` · `Trace` · `StateBox` |
+| Experimento | `WhatIf` (panel o documento reactivo) · `Sandbox` · `Lab` |
+| Aprendizaje | `Check` · `Contrast` · `Checkpoint` — y `Finish` para cerrar |
 
 ### Las comprobaciones
 
-Siete mecánicas. Lo único que cambia es la *acción* de quien lee; el armazón que la
-rodea — situación → acción → evaluación → feedback — es siempre el mismo.
+Siete mecánicas. Solo cambia la *acción* del lector; el armazón —situación → acción →
+evaluación → feedback— es siempre el mismo.
 
 | Mecánica | Qué te dice |
 |---|---|
-| `prediction` | ¿Su modelo mental produce la salida correcta? |
+| `prediction` | ¿Su modelo mental produce el resultado correcto? |
 | `spot` | ¿Reconoce el concepto en material real? |
 | `classify` | ¿Distingue dos cosas que se confunden? |
-| `arrange` | ¿Entiende el proceso? (con `low`/`high` sirve para ordenar por magnitud) |
+| `arrange` | ¿Entiende el proceso? (con `low`/`high` se convierte en ranking) |
 | `explain` | ¿Sabe *generar* la explicación, no solo reconocerla? |
-| `estimate` | ¿Tiene bien calibrado el orden de magnitud? |
+| `estimate` | ¿Tiene bien el sentido de la escala? |
 | `choose` | ¿Es de verdad una elección entre opciones con nombre? |
 
-Añade `confidence` y quien lee califica cómo de seguro estaba. El caso valioso es
-**seguro y equivocado** — una creencia en la que confía activamente y que no se
-sostiene — y el final lo señala con nombre y apellidos. Detalles:
-[`references/quiz-modes.md`](skills/make-it-learnable/references/quiz-modes.md).
+Con `confidence` el lector indica cómo de seguro estaba. El caso valioso es **seguro y
+equivocado** —una creencia en la que confía y que no se sostiene— y el cierre lo señala
+por su nombre. Detalles: [`references/checks.md`](skills/make-it-learnable/references/checks.md).
 
-## Escribirlas a mano
+## La implementación de referencia
 
-No hace falta el agente. Escribe un fragmento de cuerpo y constrúyelo:
-
-```html
-<div class="ml-shell">
-  <header class="ml-hero">
-    <p class="ml-eyebrow">Fundamentos de backend · 12 min</p>
-    <h1>Por qué hay una caché delante de tu base de datos</h1>
-  </header>
-
-  <scroll-story>
-    <l-section id="predice" title="Antes de arreglarlo" goal="Mójate con un número">
-      <l-quiz mode="prediction" answer="b" confidence>
-        <l-prompt>La misma página se pide 1.000 veces. ¿Cuántas consultas a la BD?</l-prompt>
-        <l-option value="a">Una — las bases de datos cachean consultas repetidas</l-option>
-        <l-option value="b">1.000 veces</l-option>
-        <l-actual>1.000 veces.</l-actual>
-        <l-miss for="a">Las bases de datos sí mantienen páginas en memoria, así que la
-        consulta va más rápida. Pero "consulta más rápida" no es "ninguna consulta".</l-miss>
-        <l-why><p>La base de datos no tiene ni idea de que la respuesta que acaba de
-        calcular se va a volver a pedir. Ese es el hueco que llena una caché — no
-        velocidad, <b>repetición</b>.</p></l-why>
-      </l-quiz>
-    </l-section>
-  </scroll-story>
-
-  <l-finish title="Esto es cachear, en serio">
-    <l-next><p>Siguiente paso: invalidación. Esta lección corta no la cubre.</p></l-next>
-  </l-finish>
-</div>
-```
+[`reference-implementation/`](reference-implementation/) es el runtime HTML del que se
+sacaron los contratos: custom elements, una hoja de estilos, un builder que valida y
+ensambla el cuerpo de una lección, y dos cuerpos de ejemplo. **No forma parte de la
+skill** ni se distribuye con ella: vive en este repo como referencia de comportamiento
+y para escribir lecciones a mano:
 
 ```bash
-python3 skills/make-it-learnable/scripts/build_lesson.py lesson-body.html -o lesson.html \
+python3 reference-implementation/scripts/build_lesson.py \
+  reference-implementation/examples/cache-body.html -o leccion.html \
   --title "…" --desc "…" --lang es \
   --source "Título de la fuente|https://example.com/fuente"
 ```
 
-El script de build se niega a publicar referencias cruzadas rotas — un `focus` que
-apunta a algo que no existe, un quiz sin respuesta, un `l-out` con una variable no
-declarada — porque esas cosas fallan *en silencio* en el navegador: la página se
-sigue viendo, simplemente deja de enseñar. La validación es estricta por defecto:
-los fallos pedagógicos y estructurales también detienen la entrega. `--lenient` queda
-reservado para borradores. Cada lección terminada incluye al menos un `--source`.
-
-Comprobar sin construir:
-
-```bash
-python3 skills/make-it-learnable/scripts/build_lesson.py lesson-body.html --check-only
-```
+Su contrato de marcado está en [`reference-implementation/docs/`](reference-implementation/docs/).
+`python3 -m unittest discover -s tests` ejecuta los tests del builder.
 
 ## Ejemplos
 
 [`examples/gallery.html`](examples/gallery.html) — **no es una lección**, es el
-vocabulario entero en una página: todas las primitivas, las 7 mecánicas de comprobación,
-todas las variantes, rellenadas con contenido sobre LLMs para que las demos digan algo
-real. Ábrelo directamente y úsalo para consultar. Su fuente legible está en
-[`skills/make-it-learnable/examples/gallery-body.html`](skills/make-it-learnable/examples/gallery-body.html);
-los otros `*-body.html` que hay al lado son lecciones completas que el agente lee como
-modelos.
+vocabulario completo en una página: cada componente, las 7 mecánicas de comprobación y
+cada variante, con contenido sobre LLMs para que las demos digan algo real. Ábrelo
+directamente y úsalo para consultar. Se construyó con la implementación de referencia.
 
 ## Cómo está montado el proyecto
 
 ```
 skills/make-it-learnable/      la skill empaquetada — lo único que se distribuye
-  SKILL.md                     el flujo + qué primitivas encajan con qué material
-  references/authoring.md      cómo pasar de una fuente cualquiera a una lección
-  references/primitives.md     contrato de marcado de todas las primitivas
+  SKILL.md                     flujo + qué componentes encajan con qué material
+  references/authoring.md      cómo pasar de cualquier fuente a una lección
+  references/blueprint.md      el formato de blueprint + una lección completa de ejemplo
+  references/components.md     un contrato de comportamiento por componente
+  references/checks.md         las 7 mecánicas de comprobación y el feedback
+  references/runtime.md        envoltorio de la página, interfaz, puntos, cierre, paleta
   references/visuals.md        cuándo dibujar en vez de tirar de un widget
-  references/quiz-modes.md     las 7 mecánicas de comprobación
-  assets/runtime.{css,js}      el runtime — nunca se toca al escribir una lección
-  assets/logo.svg              la marca
-  assets/favicon.svg           la marca a 32, incrustada en cada build
-  scripts/build_lesson.py      ensambla y valida
-  examples/*-body.html         fuentes legibles que lee el agente
+  assets/favicon.svg           la marca a 32, incrustada en cada lección
+reference-implementation/      el runtime HTML + builder que describen los contratos
+tests/                         tests del builder de referencia
 package-skill.sh               genera make-it-learnable.zip para distribuir
-make-it-learnable.zip          el artefacto que le pasas a otra persona (ignorado por git)
+make-it-learnable.zip          el artefacto que le pasas a otra persona (ignorado en git)
 examples/                      lecciones construidas, ábrelas en el navegador
-assets/                        las capturas de este README
+assets/                        el logo y las capturas de este README
 ```
 
 ## Decisiones de diseño
@@ -246,7 +225,7 @@ assets/                        las capturas de este README
 
 ## Límites
 
-- Los navegadores bloquean `l-sandbox` en `file://`. Sírvelo por HTTP
+- Los navegadores bloquean `Sandbox` en `file://`. Sírvelo por HTTP
   (`python3 -m http.server`) para enseñarlo, o déjalo fuera de un fichero que la gente
   vaya a abrir en local.
 - Nada sale del navegador. El récord personal vive en `localStorage`, indexado por el

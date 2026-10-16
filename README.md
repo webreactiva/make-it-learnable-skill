@@ -1,4 +1,4 @@
-<img src="skills/make-it-learnable/assets/logo.svg" alt="" width="96" height="96">
+<img src="assets/logo.svg" alt="" width="96" height="96">
 
 # make-it-learnable
 
@@ -43,9 +43,9 @@ Once a couple of lessons have convinced you, install it for every project: copy 
 same `make-it-learnable/` folder into `~/.claude/skills/` (or `~/.agents/skills/`).
 From a clone of this repo the folder to copy is `skills/make-it-learnable/`.
 
-Requirements: **Python 3** (standard library only) and a browser with CSS `:has()` —
-Chrome 105+, Safari 15.4+, Firefox 121+. The runtime is custom elements and plain CSS;
-there is nothing to compile and nothing to `npm install`.
+Requirements: an agent that can write files, and a current browser to open the result.
+The skill ships no code to install: no runtime, no build script, nothing to compile and
+nothing to `npm install`.
 
 ## Use it
 
@@ -66,11 +66,11 @@ topic** described in words. Add who it is for and it will pitch the lesson at th
 With no argument at all it asks — it has no default subject, and guessing one wastes a
 whole build.
 
-The agent then reads the material, decides which primitives fit it, writes the lesson
-body, and builds it into a single `.html` file. An explicitly requested language wins;
-otherwise the request language takes precedence over the source language. The runtime
-ships in English and Spanish, and the builder prevents an accidental mixed-language
-delivery.
+The agent then reads the material, decides which components fit it, writes a
+**blueprint** of the lesson, checks it, and builds a single `.html` file from it. An
+explicitly requested language wins; otherwise the request language takes precedence
+over the source language. The chrome text is specified in English and Spanish, and a
+mixed-language page is never shipped.
 
 ## What it looks like
 
@@ -94,32 +94,48 @@ estimating a magnitude are different questions, and they fail differently.
 
 ## What it builds
 
-One `.html` file, roughly 110 KB, theme-aware, keyboard-accessible and printable.
+One `.html` file, theme-aware, keyboard-accessible and printable.
 
-A lesson is made of **sections**, each with a stated goal, wrapped in a
-**scroll-story** that turns scroll position into narrative time. A **stage** holds one
-persistent representation — a diagram, a trace, a piece of state — and scenes
-transform it as the reader moves, rather than swapping in a new picture each time.
-**Checks** interrupt at the right moments, and a **finish** card closes the lesson
-with what to revisit.
+A lesson is made of **sections**, each with a stated goal. A **stage** holds one
+persistent representation — a diagram, a trace, a piece of state — and a **story**'s
+scenes transform it as the reader scrolls, rather than swapping in a new picture each
+time. **Checks** interrupt at the right moments, and a **finish** card closes the
+lesson with what to revisit.
+
+### How the skill works: blueprint + contracts
+
+The skill contains **no markup, no stylesheet and no script**. It gives the agent two
+things instead:
+
+- **A blueprint format** ([`references/blueprint.md`](skills/make-it-learnable/references/blueprint.md))
+  — a YAML plan of the lesson that names every component, in order, with every input
+  filled in: prompts, answers, misses, whys, stage parts, effects, sources. It is
+  where cross-references get checked, before any code exists.
+- **Component contracts** ([`components.md`](skills/make-it-learnable/references/components.md),
+  [`checks.md`](skills/make-it-learnable/references/checks.md),
+  [`runtime.md`](skills/make-it-learnable/references/runtime.md)) — for each piece,
+  what it is for, what it takes, how it behaves (numbers, thresholds, text, keyboard),
+  and what must hold when it ships.
+
+The agent writes the page its own way from those two. Two lessons can look nothing
+alike inside and must behave identically outside.
 
 ### The vocabulary
 
-The primitives, grouped by what they do. Two of them are narrative modes and you pick one per stretch of the lesson: `scroll-story` keeps one object on screen and transforms it through scenes, `l-panels` runs a sequence of full-width drawings with a sentence over each. Plus the `scroll-story` runtime they
-live inside (with its `l-scene` beats) and the `l-finish` card that closes a lesson.
-A good lesson uses **four to seven** of them: picking the right handful is the main
-act of judgement, and using more is noise, not thoroughness.
+The components, grouped by what they do. Two of them are narrative modes and you pick
+one per stretch of the lesson: `Story` keeps one object on screen and transforms it
+through scenes, `Panels` runs a sequence of full-width drawings with a sentence over
+each. A good lesson uses **four to seven** of them: picking the right handful is the
+main act of judgement, and using more is noise, not thoroughness.
 
-| Family | Primitives |
+| Family | Components |
 |---|---|
-| Structure | `l-section` · `l-stack` · `l-split` · `l-stage` · `l-draw` |
-| Narrative | `l-panels` · `l-stepper` · `l-branch` — and the `scroll-story` runtime with its `l-scene` beats |
-| Attention | `l-focus` · `l-reveal` · `l-layer` · `l-anatomy` · `l-compare` |
-| Behaviour | `l-transform` · `l-flow` · `l-trace` · `l-state` |
-| Experiment | `l-whatif` (panel or reactive-document) · `l-sandbox` · `l-lab` |
-| Learning | `l-quiz` · `l-contrast` · `l-checkpoint` — and `l-finish` to end |
-
-Full markup contract: [`references/primitives.md`](skills/make-it-learnable/references/primitives.md).
+| Structure | `Section` · `Stack` · `Split` · `Stage` · `Drawing` |
+| Narrative | `Story` + `Scene` · `Panels` · `Stepper` · `Branch` |
+| Attention | `Focus` · `Reveal` · `Layers` · `Anatomy` · `Compare` |
+| Behaviour | `Transform` · `Flow` · `Trace` · `StateBox` |
+| Experiment | `WhatIf` (panel or reactive-document) · `Sandbox` · `Lab` |
+| Learning | `Check` · `Contrast` · `Checkpoint` — and `Finish` to end |
 
 ### The checks
 
@@ -138,87 +154,51 @@ situation → action → evaluation → feedback — stays the same.
 
 Add `confidence` and the reader rates how sure they were. The valuable case is
 **confident and wrong** — a belief they actively trust that does not hold — and the
-ending calls it out by name. Details: [`references/quiz-modes.md`](skills/make-it-learnable/references/quiz-modes.md).
+ending calls it out by name. Details: [`references/checks.md`](skills/make-it-learnable/references/checks.md).
 
-## Authoring by hand
+## The reference implementation
 
-You do not need the agent. Write a body fragment and build it:
-
-```html
-<div class="ml-shell">
-  <header class="ml-hero">
-    <p class="ml-eyebrow">Backend fundamentals · 12 min</p>
-    <h1>Why a cache sits in front of your database</h1>
-  </header>
-
-  <scroll-story>
-    <l-section id="predict" title="Before we fix it" goal="Commit to a number first">
-      <l-quiz mode="prediction" answer="b" confidence>
-        <l-prompt>The same page is requested 1,000 times. How many DB queries?</l-prompt>
-        <l-option value="a">Once — databases cache repeated queries</l-option>
-        <l-option value="b">1,000 times</l-option>
-        <l-actual>1,000 times.</l-actual>
-        <l-miss for="a">Databases do keep pages in memory, so the query gets faster.
-        But "faster query" is not "no query".</l-miss>
-        <l-why><p>The database has no idea the answer is about to be asked for
-        again. That is the gap a cache fills — not speed, <b>repetition</b>.</p></l-why>
-      </l-quiz>
-    </l-section>
-  </scroll-story>
-
-  <l-finish title="That's caching, honestly">
-    <l-next><p>Next: invalidation strategies. This short lesson did not cover them.</p></l-next>
-  </l-finish>
-</div>
-```
+[`reference-implementation/`](reference-implementation/) is the HTML runtime the
+contracts were written from: custom elements, a stylesheet, a builder that validates
+and assembles a lesson body, and two example bodies. It is **not part of the skill**
+and is not distributed with it — it lives in this repo as the behavioural reference
+and for authoring by hand:
 
 ```bash
-python3 skills/make-it-learnable/scripts/build_lesson.py lesson-body.html -o lesson.html \
+python3 reference-implementation/scripts/build_lesson.py \
+  reference-implementation/examples/cache-body.html -o lesson.html \
   --title "…" --desc "…" --lang en \
   --source "Source title|https://example.com/source"
 ```
 
-The build script refuses to ship broken cross-references — a `focus` target that does
-not exist, a quiz with no answer, a `l-out` using an undeclared variable — because
-those fail *silently* in a browser: the page still renders, it just stops teaching.
-Validation is strict by default, so pedagogical and structural warnings also stop a
-release. `--lenient` is for drafts only. Every delivered lesson records at least one
-`--source`.
-
-Check without building:
-
-```bash
-python3 skills/make-it-learnable/scripts/build_lesson.py lesson-body.html --check-only
-```
+Its markup contract is in [`reference-implementation/docs/`](reference-implementation/docs/).
+`python3 -m unittest discover -s tests` runs the builder's tests.
 
 ## Examples
 
 [`examples/gallery.html`](examples/gallery.html) — **not a lesson**, the whole
-vocabulary in one page: every primitive, all 7 check mechanics, every variant,
-filled with LLM content so the demos say something real. Open it directly and use it
-to look things up. Its readable source is
-[`skills/make-it-learnable/examples/gallery-body.html`](skills/make-it-learnable/examples/gallery-body.html);
-the other `*-body.html` files next to it are full lessons the authoring agent reads
-as models.
+vocabulary in one page: every component, all 7 check mechanics, every variant, filled
+with LLM content so the demos say something real. Open it directly and use it to look
+things up. It was built with the reference implementation.
 
 ## Project layout
 
 ```
 skills/make-it-learnable/      the packaged skill — the only thing distributed
-  SKILL.md                     workflow + which primitives fit which material
+  SKILL.md                     workflow + which components fit which material
   references/authoring.md      how to go from arbitrary source to a lesson
-  references/primitives.md     markup contract for every primitive
+  references/blueprint.md      the blueprint format + a complete worked lesson
+  references/components.md     one behaviour contract per component
+  references/checks.md         the 7 check mechanics and the feedback shell
+  references/runtime.md        page envelope, chrome, scoring, ending, palette
   references/visuals.md        when to draw instead of reaching for a widget
-  references/quiz-modes.md     the 7 check mechanics
-  assets/runtime.{css,js}      the runtime — never edited when authoring a lesson
-  assets/logo.svg              the mark
-  assets/favicon.svg           the mark at 32, inlined into every build
-  scripts/build_lesson.py      assembles and validates
-  examples/*-body.html         readable sources the authoring agent reads
+  assets/favicon.svg           the mark at 32, inlined into every lesson
+reference-implementation/      the HTML runtime + builder the contracts describe
+tests/                         tests for the reference builder
 package-skill.sh               builds make-it-learnable.zip for distribution
 make-it-learnable.zip          the artefact you hand to someone else (git-ignored)
 examples/                      built lessons, open them in a browser
-assets/                        the screenshots in this README
+assets/                        the logo and the screenshots in this README
 ```
 
 ## Design notes
@@ -240,7 +220,7 @@ assets/                        the screenshots in this README
 
 ## Limits
 
-- `l-sandbox` is blocked by browsers on `file://`. Serve over HTTP
+- `Sandbox` is blocked by browsers on `file://`. Serve over HTTP
   (`python3 -m http.server`) to demo it, or leave it out of a file people open locally.
 - Nothing leaves the browser. The personal best lives in `localStorage`, keyed by the
   lesson title — private to that reader, on that machine, and gone if they clear site
