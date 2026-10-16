@@ -8,11 +8,8 @@ build/
 .env.*
 *.log
 
-# Artefacto generado por package-skill.sh
-make-it-learnable.zip
-
 .agents/
 .claude/
 
-# Lecciones de trabajo, ya excluidas del zip por package-skill.sh
+# Lecciones de trabajo
 work/
