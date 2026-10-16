@@ -97,7 +97,9 @@ else will point at is a **part** with a name. A part may also be:
   own `state`, or scrolling back shows the wrong one);
 - **layer: L** — shown or hidden by `Layers`.
 - **poses** — named positions (or sizes, angles, fill levels) the part can be
-  in, plus an optional **path** it moves along between them. One part with poses
+  in, plus an optional **path** it moves along between them. A bar that grows,
+  a gauge that turns or a tank that fills is a pose too — `{ low: "a tenth
+  full", high: "nine tenths full" }` — and it changes gradually, like travel. One part with poses
   is how a thing *moves*; several copies toggled by `when` is how it teleports.
 
 **Behaves** as the one thing the [effect protocol](#the-effect-protocol)
@@ -132,7 +134,10 @@ is genuinely vertical. Leave margin inside the box — nothing touches its edges
 so the drawing does not look jammed against its frame. Focus is shown by everything else receding.
 **Colours carry the meanings** in `runtime.md` → *Look and feel*, in both themes.
 Labels stay readable at the size the
-drawing actually renders, including on a phone.
+drawing actually renders, including on a phone: a wide drawing shrunk to a
+phone's width shrinks its labels with it, so on a narrow screen either give the
+drawing a portrait arrangement (the same parts re-placed in a taller box) or
+fewer, larger labels.
 **Holds** exposed to assistive tech as one image with that one-sentence label;
 no external images, fonts or embedded foreign documents.
 
@@ -295,7 +300,8 @@ familiar one first. Each pair is visibly linked: picking or
 hovering a part on one side singles out its match on the other, using the
 "thing under discussion" meaning. A drawing is one image to assistive tech, so
 the pairs are also reachable as a short list of focusable controls (one per
-pair, named by its `label`) that drive the same highlight. Matching parts look alike in
+pair, named by its `label`, the list itself named `analogy.pairs`) that drive
+the same highlight. Matching parts look alike in
 both drawings — same shape, same place, same meaning colour — so the mapping is
 seen before it is read. `breaks`, when given, sits after both drawings: the
 point where the analogy would start teaching something false.

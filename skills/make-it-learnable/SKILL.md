@@ -96,7 +96,8 @@ the runbook is dodging. Say which you think it is before building, not after.
 
 ### 2. Choose the components — most of them are wrong for any given lesson
 
-A good lesson uses **4 to 7** of them. Picking the right handful is the main act
+A good lesson uses **4 to 7** of them — counting the teaching components, not
+`Section`, `Check`, `Checkpoint`, `Finish` or the always-present ones below. Picking the right handful is the main act
 of judgement in this skill; using more is not thoroughness, it is noise.
 
 The table below is where to start, not what to file. It maps the common shapes to
@@ -123,8 +124,8 @@ this subject could have produced.
 These are always present, whatever the topic:
 
 - a `Section` with a real goal for each idea, and **every section opens with a
-  big drawing** — a `Picture`, `Panels`, a `Story` or an `Analogy` — before any
-  paragraph (a section that opens with a check, or that is only a `Checkpoint`,
+  big drawing** — a `Picture`, `Panels`, a `Story` or an `Analogy` — right after
+  its heading and before any paragraph (a section that opens with a check, or that is only a `Checkpoint`,
   is the exception);
 - at least one `Analogy`, where the reader first meets the central concept;
 - wherever something goes somewhere (a request, a packet, a message in a

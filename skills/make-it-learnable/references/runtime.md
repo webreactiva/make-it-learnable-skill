@@ -58,7 +58,8 @@ At the end of the page, after the shell, in this order:
 
 An always-visible, unobtrusive indicator of how far through the page the reader
 is (the fraction scrolled; 0 when the page does not scroll). It works with or
-without a `Story` — it owns its own scroll tracking. Its form is yours.
+without a `Story` — it owns its own scroll tracking. Its form is yours; it is
+exposed to assistive tech as a progress indicator named `rail.label`.
 
 ## Score display (HUD)
 
