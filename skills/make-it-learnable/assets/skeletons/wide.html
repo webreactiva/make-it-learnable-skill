@@ -1,0 +1,59 @@
+<!--
+  Wide — any block whose payload is a drawing (Stage, Picture, Panels beats,
+  both drawings of an Analogy) breaks out of the prose column and takes the
+  full width of the screen.
+
+  This file is structure and layout mechanics only. Colours, type, borders,
+  backgrounds, spacing and motion are yours: add them, rename the classes,
+  restructure the markup — but keep what the mechanics do, and keep the
+  data-wide attribute on every edge-to-edge block: the layout check below
+  finds them by it.
+-->
+<main class="lesson">
+  <p>Prose stays in the reading column.</p>
+
+  <figure class="wide" data-wide>
+    <svg viewBox="0 0 1600 700" role="img" aria-label="One sentence saying what the drawing shows">
+      <!-- one <g data-part="NAME"> per part the blueprint names -->
+    </svg>
+    <figcaption>The caption, if any, goes back to the reading column.</figcaption>
+  </figure>
+</main>
+
+<style>
+  /* Lets a wide block reach the screen edges without a sideways scrollbar.
+     clip, not hidden: hidden would break sticky stages. */
+  body { overflow-x: clip; }
+
+  /* Out of the column, edge to edge, whatever the column's width. Width and
+     margin go together and nothing else may set this block's margin: a later
+     `margin: 20px 0` on the same element silently undoes it. Use padding or
+     margin-block for vertical space. */
+  .wide { width: 100vw; margin-inline: calc(50% - 50vw); }
+
+  /* The drawing fills the width and keeps its landscape proportion. */
+  .wide > svg { display: block; width: 100%; height: auto; }
+
+  /* Text that belongs to the drawing returns to the reading width. */
+  .wide > figcaption { max-width: var(--measure, 65ch); margin-inline: auto; }
+</style>
+
+<script>
+  /* Layout check — keep it in the lesson. Silent when the layout is right; a
+     console warning names every drawing that is not edge to edge and every
+     block that has drifted off centre, so "the console is clean" covers it. */
+  addEventListener('load', () => {
+    const vw = innerWidth;   // what 100vw measures, scrollbar included
+    document.querySelectorAll('svg[role="img"]').forEach(svg => {
+      const wide = svg.closest('[data-wide]');
+      if (!wide) return console.warn('[layout] drawing outside an edge-to-edge block:', svg.getAttribute('aria-label'));
+      const r = wide.getBoundingClientRect();
+      if (Math.abs(r.left) > 1 || Math.abs(r.width - vw) > 1) console.warn('[layout] block is not edge to edge:', wide);
+    });
+    document.querySelectorAll('section > *:not([data-wide])').forEach(el => {
+      const r = el.getBoundingClientRect();
+      if (r.width && !el.querySelector('[data-wide]') && Math.abs(r.left - (vw - r.right)) > 2)
+        console.warn('[layout] block is off centre:', el);
+    });
+  });
+</script>

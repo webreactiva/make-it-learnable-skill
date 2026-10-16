@@ -1,0 +1,49 @@
+<!--
+  classify check — a pool of item chips and two or more buckets.
+
+  This file is structure, hooks and the layout mechanics the behaviour depends
+  on. Colours, type, borders, backgrounds, spacing and motion are yours: add
+  them, rename the classes, restructure the markup — but keep what the
+  mechanics do:
+    - chips wrap onto new lines; nothing ever scrolls sideways;
+    - buckets sit side by side while they fit and stack when they don't;
+    - every chip and bucket is a real button, so it works by keyboard, and
+      its text colour is set explicitly (buttons do not inherit it).
+  Text in [brackets] comes from strings.yaml by key.
+-->
+<div class="check" id="CHECK_ID" data-mode="classify">
+  <p class="check-kind">[kind.classify]</p>
+  <p class="check-prompt">The question.</p>
+  <p class="check-hint">[hint.classify]</p>
+
+  <div class="pool" role="group" aria-label="Items to sort">
+    <button type="button" class="chip" aria-pressed="false">An item</button>
+    <button type="button" class="chip" aria-pressed="false">Another item, possibly quite a lot longer</button>
+  </div>
+
+  <div class="buckets">
+    <div class="bucket">
+      <button type="button" class="bucket-target">First group</button>
+      <div class="bucket-items"><!-- chips move here --></div>
+    </div>
+    <div class="bucket">
+      <button type="button" class="bucket-target">Second group</button>
+      <div class="bucket-items"></div>
+    </div>
+  </div>
+
+  <button type="button" class="check-submit" disabled>[check.submit]</button>
+  <div class="check-feedback" aria-live="polite"></div>
+</div>
+
+<style>
+  /* Chips wrap; long labels wrap inside the chip instead of widening it. */
+  .pool, .bucket-items { display: flex; flex-wrap: wrap; }
+  .chip { max-width: 100%; white-space: normal; text-align: start; }
+
+  /* Side by side while they fit, stacked when they don't — never off screen. */
+  .buckets { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 14rem), 1fr)); }
+
+  /* Native buttons ignore the page's text colour and font unless told. */
+  .check button { color: inherit; font: inherit; }
+</style>

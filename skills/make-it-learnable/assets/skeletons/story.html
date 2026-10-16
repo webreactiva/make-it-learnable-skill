@@ -1,0 +1,100 @@
+<!--
+  Story, "over" arrangement — a pinned, full-width stage with the scene texts
+  scrolling over it, one at a time.
+
+  This file is structure, hooks and the layout mechanics the behaviour depends
+  on. Colours, type, borders, backgrounds, spacing and motion are yours: add
+  them, rename the classes, restructure the markup — but keep what the
+  mechanics do:
+    - the stage is pinned for the whole story and fills the screen width;
+    - each scene is one screen tall, so only one text is over the stage at a
+      time and the others are off screen, never stacked on the drawing;
+    - the text sits in a band at the bottom edge — compose the drawing so that
+      band is empty, and give the text a surface that reads over the drawing.
+-->
+<section class="story" data-story>
+  <div class="story-stage" data-stage="STAGE_ID" data-wide>
+    <svg viewBox="0 0 1600 900" role="img" aria-label="One sentence saying what the stage shows">
+      <path data-part="track" d="…" />            <!-- a path a moving part travels along -->
+      <g data-part="mover">…</g>                   <!-- drawn ONCE, centred on 0,0; scenes move it with pose -->
+    </svg>
+  </div>
+
+  <div class="story-scenes">
+    <div class="scene" data-scene="0"><div class="scene-text">First beat.</div></div>
+    <div class="scene" data-scene="1"><div class="scene-text">Second beat.</div></div>
+    <div class="scene" data-scene="2"><div class="scene-text">Third beat.</div></div>
+  </div>
+</section>
+
+<style>
+  body { overflow-x: clip; }                          /* see wide.html */
+  .story { position: relative; }
+
+  /* Pinned and edge to edge for the whole story. */
+  .story-stage {
+    position: sticky; top: 0;
+    height: 100vh; height: 100svh;
+    width: 100vw; margin-inline: calc(50% - 50vw);
+  }
+  .story-stage > svg { display: block; width: 100%; height: 100%; }
+
+  /* The scenes scroll over the stage, starting where it starts. */
+  .story-scenes { position: relative; margin-top: -100vh; margin-top: -100svh; pointer-events: none; }
+
+  /* One screen per scene: only one text over the stage at a time. */
+  .scene { min-height: 100vh; min-height: 100svh; display: flex; align-items: flex-end; justify-content: center; }
+  .scene-text { pointer-events: auto; max-width: var(--measure, 65ch); }
+
+  @media (prefers-reduced-motion: reduce) { .story-stage * { transition: none !important; } }
+</style>
+
+<script>
+  /* Active scene: the one whose centre is nearest the middle of the screen,
+     recomputed on every scroll — so scrolling back up lands on the right one.
+     apply(i) must put the stage in exactly scene i's condition (accumulated
+     reveals, last pose set at or before i, scene i's state and focus). */
+  function initStory(story, apply) {
+    const scenes = [...story.querySelectorAll('[data-scene]')];
+    let current = -1;
+    const pick = () => {
+      const mid = innerHeight / 2;
+      let best = 0, dist = Infinity;
+      scenes.forEach((s, i) => {
+        const r = s.getBoundingClientRect();
+        const d = Math.abs(r.top + r.height / 2 - mid);
+        if (d < dist) { dist = d; best = i; }
+      });
+      if (best === current) return;
+      const from = current;
+      current = best;
+      scenes.forEach((s, i) => s.toggleAttribute('data-active', i === best));
+      apply(best, from);
+    };
+    addEventListener('scroll', pick, { passive: true });
+    addEventListener('resize', pick);
+    pick();
+  }
+
+  /* Moves a part along a path between two positions given as fractions of the
+     path's length (0–1). For a closed track, pass `to` past 1 (or below 0) to
+     keep going the same way round. Instant under reduced motion. */
+  function travel(part, path, from, to, ms = 800) {
+    const len = path.getTotalLength();
+    const place = t => {
+      const f = ((t % 1) + 1) % 1;
+      const p = path.getPointAtLength(f * len);
+      part.setAttribute('transform', `translate(${p.x} ${p.y})`);
+    };
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return place(to);
+    cancelAnimationFrame(part._travel);
+    const t0 = performance.now();
+    const step = now => {
+      const k = Math.min(1, (now - t0) / ms);
+      const e = k < 0.5 ? 2 * k * k : 1 - (-2 * k + 2) ** 2 / 2;
+      place(from + (to - from) * e);
+      if (k < 1) part._travel = requestAnimationFrame(step);
+    };
+    part._travel = requestAnimationFrame(step);
+  }
+</script>
