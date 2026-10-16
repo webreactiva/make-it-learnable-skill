@@ -32,7 +32,9 @@
   .wide { width: 100vw; margin-inline: calc(50% - 50vw); }
 
   /* The drawing fills the width and keeps its landscape proportion. */
-  .wide > svg { display: block; width: 100%; height: auto; }
+  .wide > svg { display: block; width: 100%; height: auto; max-height: 85vh; max-height: 85svh; }
+  /* ↑ edge to edge, but never taller than the screen: a drawing the reader has
+     to scroll through is no longer seen at a glance. */
 
   /* Text that belongs to the drawing returns to the reading width. */
   .wide > figcaption { max-width: var(--measure, 65ch); margin-inline: auto; }
@@ -53,7 +55,8 @@
       const wide = svg.closest('[data-wide]');
       if (!wide) return console.warn('[layout] drawing outside a data-wide block:', svg);
       const r = wide.getBoundingClientRect();
-      if (Math.abs(r.left) > 1 || Math.abs(r.width - vw) > 1) console.warn('[layout] block is not edge to edge:', wide);
+      const bar = (innerWidth - document.documentElement.clientWidth) / 2 + 1;   // classic scrollbars shift 100vw by half their width
+      if (Math.abs(r.left) > bar || Math.abs(r.width - vw) > 1) console.warn('[layout] block is not edge to edge:', wide);
     });
     document.querySelectorAll('section > *:not([data-wide])').forEach(el => {
       const r = el.getBoundingClientRect();

@@ -136,13 +136,14 @@ state/derived state, server/client state.
 The blueprint lists items *inside their correct bucket*; there is no separate
 answer key to keep in sync.
 **Behaves**: a hint (`hint.classify`), an
-unlabelled pool holding every item shuffled, and the named buckets. Items wrap
+pool holding every item shuffled (named `classify.pool` for assistive tech), and the named buckets. Items wrap
 onto new lines and buckets stack when they do not fit side by side — nothing in
 the check ever scrolls sideways or runs off the screen (start from
 `assets/skeletons/classify.html`). Click-to-place, not
 drag and drop — so touch and keyboard work: pick an item (it highlights; every
 valid destination, pool included, shows it is armed), then pick a bucket or the
-pool to put it there; picking the same item again cancels. Ready when the pool
+pool to put it there — by keyboard too, the pool included; picking the same
+item again cancels. Ready when the pool
 is empty. On check, each placed item turns ok or bad. Verdict: right if all are
 in place, partial if some are, otherwise wrong.
 **Holds** at least 2 buckets, each named, each with at least one item.

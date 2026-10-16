@@ -293,7 +293,9 @@ of the real thing), `pairs`* (two or more { `familiar`: part, `concept`: part,
 (`assets/skeletons/wide.html`) — never shrunk side by side in two columns — the
 familiar one first. Each pair is visibly linked: picking or
 hovering a part on one side singles out its match on the other, using the
-"thing under discussion" meaning, by keyboard too. Matching parts look alike in
+"thing under discussion" meaning. A drawing is one image to assistive tech, so
+the pairs are also reachable as a short list of focusable controls (one per
+pair, named by its `label`) that drive the same highlight. Matching parts look alike in
 both drawings — same shape, same place, same meaning colour — so the mapping is
 seen before it is read. `breaks`, when given, sits after both drawings: the
 point where the analogy would start teaching something false.
@@ -343,12 +345,14 @@ a dead control.
 
 ### `Compare` — alternatives on shared dimensions
 
-**Takes** `label` (corner cell), two or more `columns`, and criteria — each a
+**Takes** `label` (corner cell, written in the lesson language), two or more `columns`, and criteria — each a
 `name` with exactly one cell per column.
 **Behaves** as a table with a header row and one row per criterion. With more
 than one criterion, a row of toggle chips (one per criterion) sits above it:
 pressing a chip highlights that row and dims the others; pressing it again, or
-another chip, changes the selection. Chips expose their pressed state.
+another chip, changes the selection. Chips expose their pressed state. On a
+narrow screen every cell stays readable without sideways scrolling — rearrange
+it (for instance one block per column) rather than shrink or scroll it.
 **Holds** at least 2 columns; every criterion has exactly as many cells as there
 are columns. Reveal criteria one at a time in prose rather than dumping the table.
 
