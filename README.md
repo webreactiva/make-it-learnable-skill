@@ -218,6 +218,67 @@ assets/                        the logo and the screenshots in this README
   mean. Only the **personal best** survives, in `localStorage`, so re-opening the file
   gives the reader a score to race rather than a blank slate.
 
+## Testing the skill across models
+
+The skill was tested by giving it, and nothing else from this repo, to other
+models and opening what they built. Every run below is one lesson generated from
+scratch. Topics: *seasons* (from a short source text, for high-school students
+who think seasons come from the Earth–Sun distance), *DNS*, *the JavaScript
+event loop*, *the HTTPS handshake* and *prompt caching*. Between rounds the skill
+was fixed wherever a model went wrong, so a later round tests a later skill.
+
+### opencode, in tmux
+
+Token counts and cost come from opencode's own session database
+(`~/.local/share/opencode/opencode.db`). The cost column is opencode's estimate at
+list price; the runs actually went through an Ollama Cloud subscription (flat
+fee). Time is wall-clock from the first prompt to the last message, including any
+wait for a nudge.
+
+| Round — what changed in the skill | Model | Topic | Input | Cache read | Output | Est. cost | Time | Outcome |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| 1 — first spec, still prescribing the look | Kimi K3 | seasons | 163,589 | 3,526,768 | 80,924 | $2.76 | 16 min | best of the round, but looked like the reference |
+| 1 | GLM 5.3 | seasons | 452,570 | 8,096,576 | 166,437 | $3.47 | 36 min | needed several nudges to stop planning |
+| 1 | DeepSeek V4 Pro | seasons | 155,835 | 337,515 | 45,101 | $0.20 | 5 min | runtime `TypeError` at load |
+| 1 | MiniMax M3 | seasons | 88,718 | 1,383,096 | 63,639 | $0.37 | 6 min | used `Function`/`eval` |
+| 1 | Qwen 3.5 397B | seasons | 0 | 0 | 0 | — | — | did not start; dropped |
+| 2 — design removed, colour as meaning | GLM 5.3 | seasons | 63,308 | 258,560 | 33,132 | $0.30 | 6 min | stuck planning; killed |
+| 2 | DeepSeek V4 Pro | seasons | 110,882 | 1,642,700 | 47,569 | $0.20 | 5 min | own look; missing string key (`undefined` in HUD) |
+| 2 | MiniMax M3 | seasons | 202,989 | 23,539,313 | 113,828 | $3.22 | 30 min | story stage scrolled away, Earth jumped |
+| 3 — `Picture`, `Analogy`, `pose` | Muse Spark 1.3 (OpenCode Zen) | seasons | 0 | 0 | 0 | — | — | no account funds |
+| 3 | Muse Spark Open | seasons | 97,707 | 698,048 | 30,115 | $0.36 | 4 min | pinned stage, but four Earths instead of one moving |
+| 4 — layout skeletons | Muse Spark Open | seasons | 99,479 | 1,266,656 | 34,260 | $0.46 | 4 min | data in `<template>` broke every later check |
+| 5 — same skill, prompt *asks* for big pictures | Muse Spark Open | DNS | 105,712 | 879,360 | 39,769 | $0.43 | 8 min | first real `pose`: the packet travels server to server |
+| 6 — big pictures required by the skill, neutral prompt | Muse Spark Open | DNS | 92,913 | 481,344 | 27,162 | $0.30 | 3 min | visual with no prompt help; clean console |
+| 6 | DeepSeek V4 Pro | event loop | 234,719 | 2,445,298 | 91,713 | $0.39 | 20 min | stopped before writing the HTML; one nudge |
+| 6 | MiniMax M3 | HTTPS | 106,546 | 9,942,737 | 59,814 | $1.40 | 10 min | stage and scenes shorter than the screen |
+
+Kimi K3 also has two aborted sessions of a few seconds (≈74k input, 1k output)
+not shown. Reasoning tokens were reported as 0 by every provider here.
+
+### Claude subagents
+
+Run from Claude Code with the `Agent` tool, each told to read only the skill.
+Tokens are summed from each subagent's transcript.
+
+| When | Model | Topic | Input | Cache write | Cache read | Output | Calls | Time | Outcome |
+|---|---|---|---:|---:|---:|---:|---:|---:|---|
+| Before round 1 | Opus 5.5 | seasons | 34 | 136,683 | 1,687,250 | 37,701 | 16 | 8 min | first check that the skill stands on its own |
+| Round 2 | Haiku 5.5 | seasons | 40 | 181,353 | 2,633,690 | 74,941 | 19 | 10 min | own look, clean console |
+| Round 2 | Sonnet 5.5 | seasons | 34 | 161,382 | 1,564,496 | 45,159 | 17 | 9 min | wide story, but panels squeezed into 3 columns |
+| Round 6 (final skill) | Sonnet 5.5 | seasons | 40 | 214,800 | 2,567,365 | 1,902¹ | 20 | 13 min | best result: one Earth travelling the orbit, all checks clean |
+| Round 6 (final skill) | Sonnet 5.5 | prompt caching | 68 | 209,885 | 5,132,561 | 35,573 | 34 | 11 min | sources checked online; clean on desktop and phone |
+
+¹ The transcript under-reports this run's output: it wrote an 80 KB page, which is
+tens of thousands of output tokens.
+
+**What the numbers say.** A lesson costs roughly 100–250k fresh input tokens and
+30–110k output tokens whatever the model; what varies wildly is cache reads,
+which grow with every extra turn a model spends re-reading its own context
+(MiniMax's 23.5M in round 2 is a model going round in circles, not a bigger
+lesson). The cheapest good runs were the ones that wrote the blueprint first and
+the page in one go.
+
 ## Limits
 
 - `Sandbox` is blocked by browsers on `file://`. Serve over HTTP

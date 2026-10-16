@@ -223,6 +223,68 @@ assets/                        el logo y las capturas de este README
   personal**, en `localStorage`, para que volver a abrir el fichero dé una marca contra
   la que competir en vez de una hoja en blanco.
 
+## Pruebas de la skill con distintos modelos
+
+La skill se probó dándosela, sin nada más de este repo, a otros modelos y
+abriendo lo que construyeron. Cada fila es una lección generada desde cero.
+Temas: *las estaciones* (a partir de un texto corto, para estudiantes de
+bachillerato que creen que se deben a la distancia de la Tierra al Sol), *el
+DNS*, *el event loop de JavaScript*, *el handshake de HTTPS* y *la caché de
+tokens*. Entre ronda y ronda se corrigió la skill allí donde un modelo fallaba,
+así que cada ronda prueba una skill más reciente.
+
+### opencode, en tmux
+
+Los tokens y el coste salen de la base de datos de sesiones de opencode
+(`~/.local/share/opencode/opencode.db`). El coste es la estimación de opencode a
+precio de lista; las ejecuciones fueron en realidad por una suscripción de
+Ollama Cloud (tarifa plana). El tiempo es de reloj, del primer prompt al último
+mensaje, incluidas las esperas hasta un empujón.
+
+| Ronda — qué cambió en la skill | Modelo | Tema | Entrada | Lectura de caché | Salida | Coste est. | Tiempo | Resultado |
+|---|---|---|---:|---:|---:|---:|---:|---|
+| 1 — primera spec, aún dictaba el aspecto | Kimi K3 | estaciones | 163.589 | 3.526.768 | 80.924 | 2,76 $ | 16 min | la mejor de la ronda, pero idéntica a la referencia |
+| 1 | GLM 5.3 | estaciones | 452.570 | 8.096.576 | 166.437 | 3,47 $ | 36 min | necesitó varios empujones para dejar de planificar |
+| 1 | DeepSeek V4 Pro | estaciones | 155.835 | 337.515 | 45.101 | 0,20 $ | 5 min | `TypeError` al cargar |
+| 1 | MiniMax M3 | estaciones | 88.718 | 1.383.096 | 63.639 | 0,37 $ | 6 min | usó `Function`/`eval` |
+| 1 | Qwen 3.5 397B | estaciones | 0 | 0 | 0 | — | — | no arrancó; descartado |
+| 2 — sin diseño, el color como significado | GLM 5.3 | estaciones | 63.308 | 258.560 | 33.132 | 0,30 $ | 6 min | atascado planificando; parado |
+| 2 | DeepSeek V4 Pro | estaciones | 110.882 | 1.642.700 | 47.569 | 0,20 $ | 5 min | aspecto propio; faltaba una clave de texto (`undefined` en el marcador) |
+| 2 | MiniMax M3 | estaciones | 202.989 | 23.539.313 | 113.828 | 3,22 $ | 30 min | el escenario se iba con el scroll y la Tierra saltaba |
+| 3 — `Picture`, `Analogy`, `pose` | Muse Spark 1.3 (OpenCode Zen) | estaciones | 0 | 0 | 0 | — | — | sin saldo en la cuenta |
+| 3 | Muse Spark Open | estaciones | 97.707 | 698.048 | 30.115 | 0,36 $ | 4 min | escenario fijo, pero cuatro Tierras en vez de una que se mueve |
+| 4 — esqueletos de layout | Muse Spark Open | estaciones | 99.479 | 1.266.656 | 34.260 | 0,46 $ | 4 min | datos en `<template>`: rompió todos los checks siguientes |
+| 5 — misma skill, el prompt *pide* big pictures | Muse Spark Open | DNS | 105.712 | 879.360 | 39.769 | 0,43 $ | 8 min | primer `pose` de verdad: el paquete viaja de servidor en servidor |
+| 6 — la skill exige big pictures, prompt neutro | Muse Spark Open | DNS | 92.913 | 481.344 | 27.162 | 0,30 $ | 3 min | visual sin ayuda del prompt; consola limpia |
+| 6 | DeepSeek V4 Pro | event loop | 234.719 | 2.445.298 | 91.713 | 0,39 $ | 20 min | se paró antes de escribir el HTML; un empujón |
+| 6 | MiniMax M3 | HTTPS | 106.546 | 9.942.737 | 59.814 | 1,40 $ | 10 min | escenario y escenas más bajos que la pantalla |
+
+Kimi K3 tiene además dos sesiones abortadas de pocos segundos (≈74k de entrada,
+1k de salida) que no aparecen. Ningún proveedor informó de tokens de razonamiento.
+
+### Subagentes de Claude
+
+Lanzados desde Claude Code con la herramienta `Agent`, con la orden de leer solo
+la skill. Los tokens se suman desde la transcripción de cada subagente.
+
+| Cuándo | Modelo | Tema | Entrada | Escritura de caché | Lectura de caché | Salida | Llamadas | Tiempo | Resultado |
+|---|---|---|---:|---:|---:|---:|---:|---:|---|
+| Antes de la ronda 1 | Opus 5.5 | estaciones | 34 | 136.683 | 1.687.250 | 37.701 | 16 | 8 min | primera prueba de que la skill se sostiene sola |
+| Ronda 2 | Haiku 5.5 | estaciones | 40 | 181.353 | 2.633.690 | 74.941 | 19 | 10 min | aspecto propio, consola limpia |
+| Ronda 2 | Sonnet 5.5 | estaciones | 34 | 161.382 | 1.564.496 | 45.159 | 17 | 9 min | story ancha, pero panels en 3 columnas |
+| Ronda 6 (skill final) | Sonnet 5.5 | estaciones | 40 | 214.800 | 2.567.365 | 1.902¹ | 20 | 13 min | el mejor resultado: una Tierra que recorre la órbita, todo limpio |
+| Ronda 6 (skill final) | Sonnet 5.5 | caché de tokens | 68 | 209.885 | 5.132.561 | 35.573 | 34 | 11 min | fuentes consultadas en la web; limpia en escritorio y móvil |
+
+¹ La transcripción se queda corta en la salida de esta ejecución: escribió una
+página de 80 KB, que son decenas de miles de tokens de salida.
+
+**Qué dicen los números.** Una lección cuesta más o menos 100–250k tokens de
+entrada nueva y 30–110k de salida, sea cual sea el modelo; lo que se dispara es
+la lectura de caché, que crece con cada vuelta extra que un modelo da releyendo
+su propio contexto (los 23,5 M de MiniMax en la ronda 2 son un modelo dando
+vueltas, no una lección más grande). Las ejecuciones buenas más baratas fueron
+las que escribieron primero el blueprint y luego la página de una vez.
+
 ## Límites
 
 - Los navegadores bloquean `Sandbox` en `file://`. Sírvelo por HTTP
