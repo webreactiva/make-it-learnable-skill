@@ -1,3 +1,5 @@
+> Markup contract of the reference implementation. Moved out of the skill, which now ships behaviour contracts only; relative links below refer to `skills/make-it-learnable/` as it was before the move.
+
 # Quiz: seven mechanics
 
 A quiz is never "question plus four answers". It is an engine for confronting a

@@ -7,7 +7,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-BUILDER_PATH = ROOT / "skills/make-it-learnable/scripts/build_lesson.py"
+BUILDER_PATH = ROOT / "reference-implementation/scripts/build_lesson.py"
 SPEC = importlib.util.spec_from_file_location("build_lesson", BUILDER_PATH)
 builder = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(builder)

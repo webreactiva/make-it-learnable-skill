@@ -15,6 +15,8 @@ from html.parser import HTMLParser
 from pathlib import Path
 
 ASSETS = Path(__file__).resolve().parent.parent / "assets"
+# The mark ships with the skill; this implementation lives beside it in the repo.
+ICON = Path(__file__).resolve().parents[2] / "skills/make-it-learnable/assets/favicon.svg"
 
 VOID = {"area","base","br","col","embed","hr","img","input","link","meta","source","track","wbr"}
 
@@ -401,7 +403,7 @@ PAGE = """<!doctype html>
 
 def icon_uri():
     """Inline the mark as a data URI — a lesson has to work with no network."""
-    svg = (ASSETS / "favicon.svg").read_text(encoding="utf-8")
+    svg = ICON.read_text(encoding="utf-8")
     svg = re.sub(r"\s*\n\s*", " ", svg).strip()
     return "data:image/svg+xml," + quote(svg, safe="")
 
