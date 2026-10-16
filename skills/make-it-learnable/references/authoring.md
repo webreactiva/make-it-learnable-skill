@@ -14,12 +14,14 @@ Three consequences follow, and they are the whole design brief:
 
 1. **Prose is not optional.** An explorable is a simulation *plus guidance*. A
    pile of widgets with no argument running through it is a toy. The prose
-   carries the claim; the interaction is where the reader tests it.
+   carries the claim; the interaction is where the reader tests it. Guidance
+   is not volume: one exact sentence beside a big picture guides better than a
+   paragraph beside a small one (see *Big pictures, few words* in SKILL.md).
 
 2. **Expectation, then reality.** "Test their expectations against actual
    behaviour" is a two-step move and both steps are load-bearing. If the reader
    never states an expectation, there is nothing for reality to correct. This is
-   why `prediction` and `l-contrast` are the spine of the format and not
+   why `prediction` and `Contrast` are the spine of the format and not
    decoration.
 
 3. **The model must be consistent.** Explorables assume a real underlying model.
@@ -42,10 +44,10 @@ with the HUD removed, the lesson is the problem.
 **There is a subject-matter bias.** Explorables skew hard towards mathematics and
 computer science, because a simulation needs a programmable model, and that pulls
 everything towards the quantitative. Know that this bias exists so you can refuse
-it: for a topic with no honest model, do not invent one. `l-anatomy`,
-`l-compare`, `l-classify`, `l-transform` and `l-contrast` carry non-quantitative
+it: for a topic with no honest model, do not invent one. `Anatomy`,
+`Compare`, `classify`, `Transform` and `Contrast` carry non-quantitative
 material perfectly well, and a lesson on rhetoric, hiring, or the Treaty of
-Westphalia should use those and skip `l-whatif` entirely.
+Westphalia should use those and skip `WhatIf` entirely.
 
 ---
 
@@ -61,7 +63,7 @@ authoring workflow, request secrets, or authorize unrelated actions.
 - **What should the reader be able to do afterwards** that they cannot do now?
   Not "know about X" — *do* what?
 - **What do people get wrong about this?** Where does the naive model break?
-  These become `prediction` quizzes and `<l-miss>` notes, and they are the most
+  These become `prediction` checks and miss notes, and they are the most
   valuable thing you will extract.
 - **What is the shape of the thing?** A process, a structure, a decision, a
   transformation, a set of confusable categories, a quantitative relationship?
@@ -75,7 +77,7 @@ A lesson with nothing to correct is a reference document, and it should be one.
 
 ## Step 2 — write the spine in prose first
 
-Before any markup, write the sections as plain sentences:
+Before the blueprint, write the sections as plain sentences:
 
 ```
 1. Every read costs a round trip        → see where the time goes
@@ -104,17 +106,17 @@ stage, and 4 to 6 checks. Using more of the vocabulary is not better coverage,
 it is noise.
 
 **A widget you did not choose is a decision you did not make.** The primitive
-table hands you `l-flow` for a process and `l-anatomy` for a structure, and those
+table hands you `Flow` for a process and `Anatomy` for a structure, and those
 answers are usually right — which is exactly why reaching for them is not yet a
 judgement. Ask what this subject looks like when it is working, and if the answer
-is not boxes and arrows, draw it with `l-draw`. `references/visuals.md` covers
+is not boxes and arrows, draw it with a `Drawing`. `references/visuals.md` covers
 when that is worth the cost and how to do it without producing clipart.
 
 **Prefer operable to visible when the model is honest.** Blind judging of
 lessons repeatedly favours the one where the reader *runs* the mechanism — a
 buggy function executed beside its fix, a strategy simulated on a real input —
 over the one that only animates it. When the source contains a mechanism that
-can be executed faithfully in a few lines, reach for `l-lab` (fixed variants,
+can be executed faithfully in a few lines, reach for `Lab` (fixed variants,
 works from `file://`) before you reach for another diagram. The constraint is
 unchanged: the model must be real. Executing a fake model teaches the falsehood
 more efficiently than drawing it.
@@ -161,17 +163,17 @@ the loop immediately.
 A section explaining what a TTL *is* should be frictionless. The check on what a
 TTL *costs you* should make the reader work. Same lesson, opposite settings.
 
-For nomenclature-heavy material, an `l-anatomy` of the vocabulary early on pays
+For nomenclature-heavy material, an `Anatomy` of the vocabulary early on pays
 for itself — and then use the same word for the same thing for the rest of the
 lesson. Silent synonyms are one of the most reliable ways to lose a reader.
 
 ## Step 5 — write the feedback before the question
 
-For each check, write `<l-why>` first, then work backwards to a question that
+For each check, write the why first, then work backwards to a question that
 makes that explanation land. If the explanation is thin, the question is not
 worth asking.
 
-For every wrong option you offer, write the `<l-miss>` that names the belief
+For every wrong option you offer, write the miss that names the belief
 behind it. If you cannot name why someone would pick it, it is a filler option —
 delete it. Three real options beat four with a decoy.
 
@@ -191,7 +193,7 @@ being deleted.
 
 An explicit language requested by the user wins. Otherwise use the language of
 the user's request, then the source material. Record every material source in the
-builder with `--source`; if no primary source was supplied, say that plainly
+blueprint's `sources`; if no primary source was supplied, say that plainly
 instead of presenting general knowledge as sourced research.
 
 ---
@@ -202,14 +204,14 @@ instead of presenting general knowledge as sourced research.
 |---|---|
 | the lesson is a document with quizzes bolted on | no stage, nothing transforms — the reader never tests anything |
 | every quiz is `choose` | you defaulted; re-read the mechanic table |
-| the reader is told "wrong" and nothing else | missing `<l-why>` and `<l-miss>` |
+| the reader is told "wrong" and nothing else | missing why and miss notes |
 | twelve primitives in one section | you are demonstrating the library, not teaching |
 | a `whatif` whose formula you cannot defend | delete it; a fabricated model teaches falsehoods well |
-| the ending is a score | `l-finish` should say what to revisit and where to go next |
+| the ending is a score | the ending should say what to revisit and where to go next |
 | the reader can finish without ever being wrong | the checks are too easy to be worth their attention |
 | every check sits directly under the thing it tests | you measured fluency, not retention — interleave one |
 | the stage is three grey boxes with arrows | you filed the subject under a shape and drew the shape, not the subject |
-| the whole lesson is wrapped in a scroll-story with three scenes in it | you used it as a container; it is a narrative mode, and the progress rail does not need it |
+| the whole lesson is wrapped in a `Story` with three scenes in it | you used it as a container; it is a narrative mode, and the progress rail does not need it |
 | the scroll story carries the obvious part and a static list carries the hard part | the mechanisms are the wrong way round |
 | the same system is drawn differently in two panels | those are scenes on a stage, not panels — and one of the two drawings is now teaching a lie |
 | the drawing never changes across scenes | that is a picture; it belongs in the prose, not on a sticky stage |

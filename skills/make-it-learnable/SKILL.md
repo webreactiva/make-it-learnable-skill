@@ -15,17 +15,26 @@ expectation and then watches reality disagree. It is not a slide deck with quizz
 at the end. Read `references/authoring.md` before writing anything; the reasoning
 there is what separates a lesson from a document with widgets on it.
 
+**This skill ships no markup, no stylesheet and no script.** It ships a
+*blueprint* format that says what to build, and *contracts* that say how each
+piece must behave. You write the page yourself, your own way, from those two.
+Every lesson built from this skill must behave the same for the reader, whatever
+its code looks like inside.
+
 ## Files here
 
 | | |
 |---|---|
 | `references/authoring.md` | **Read first.** How to go from arbitrary source to a lesson, and the pedagogy that makes it work. |
-| `references/primitives.md` | Markup contract for every primitive. Read the sections for the ones you picked. |
-| `references/visuals.md` | How to decide what to draw, and how to draw it. Read it whenever you reach for `l-draw`. |
-| `references/quiz-modes.md` | The 7 check mechanics and how to choose between them. |
-| `assets/runtime.css`, `assets/runtime.js` | The runtime. Never edit these when authoring a lesson; never inline them by hand either. |
-| `scripts/build_lesson.py` | Assembles and validates. Always use it. |
-| `examples/cache-body.html` | A complete worked lesson. Read it only when the requested lesson is substantial or you need a composition example; do not load it for small edits or validation-only work. |
+| `references/blueprint.md` | The blueprint format, what to check in it, and a complete worked lesson. |
+| `references/components.md` | One contract per component: what it is for, what it takes, how it behaves, what must hold. Read the ones you picked. |
+| `references/checks.md` | The 7 check mechanics, the feedback shell, and how to choose between them. |
+| `references/runtime.md` | What every lesson's page must contain and do: security policy, progress, score, ending, chrome text keys, and what colour has to mean. The look itself is yours. |
+| `references/visuals.md` | How to decide what to draw, and how to draw it. Read it whenever you reach for a `Drawing`. |
+| `references/strings.yaml` | Every chrome text, by key and language. The markdown only names keys; add a language here. |
+| `assets/lesson-core.js` | Logic only, no DOM, no styling: the safe expression evaluator for `WhatIf`, the scoring engine and `guard` to isolate each component's set-up. Inline it unchanged and hook it to your own page. |
+| `assets/skeletons/` | Unstyled starting structures for the few layouts that are easy to get wrong — edge-to-edge drawings, a story's pinned stage with scenes over it, the classify check. Markup, hooks and mechanics only; the look is yours. |
+| `assets/favicon.svg` | The mark, an image file inlined into every lesson as a data URI. |
 
 ---
 
@@ -76,8 +85,8 @@ before you build saves the whole build:
 
 - **Reference** — an API surface, a config table, a glossary, a list of flags.
   The reader will *look things up*, not study. A narrative is in their way. Say
-  so, and offer a single-page vocabulary spread — `examples/gallery-body.html`
-  is that shape — instead of a lesson.
+  so, and offer a single-page reference spread instead: one short `Section` per
+  entry, built from `Anatomy`, `Compare` and `Code`, no `Story`, few or no checks.
 - **A how-to** — a runbook, "do these eight steps to deploy". The reader has a
   task and is in a hurry. Numbered steps beat a scroll story. A lesson only
   earns its place if they have to *understand* the thing, not do it once.
@@ -85,54 +94,68 @@ before you build saves the whole build:
 Both can still hide a real lesson — the *why* behind the reference, the failure
 the runbook is dodging. Say which you think it is before building, not after.
 
-### 2. Choose the primitives — most of them are wrong for any given lesson
+### 2. Choose the components — most of them are wrong for any given lesson
 
 A good lesson uses **4 to 7** of them. Picking the right handful is the main act
 of judgement in this skill; using more is not thoroughness, it is noise.
 
 The table below is where to start, not what to file. It maps the common shapes to
-the primitives that usually fit them, and if you follow it literally every lesson
+the components that usually fit them, and if you follow it literally every lesson
 about a process will look like every other lesson about a process. Take the row,
 then ask what this *particular* subject does that the row cannot show — and draw
-that with `l-draw`. A lesson should have at least one representation that only
+that with a `Drawing`. A lesson should have at least one representation that only
 this subject could have produced.
 
 | The source is… | Reach for | Usually wrong here |
 |---|---|---|
-| **A process or sequence** — request lifecycle, CI/CD, algorithm, protocol, agent loop | `l-panels` for the walk-through, `l-stage` + `l-flow` where it must transform, `l-trace` for one concrete run · checks: `arrange`, `prediction` | `l-anatomy`, `l-compare` |
-| **Something that moves, fills, drains or decays** — a buffer, a queue, a token budget, a retry storm, memory layout | `l-draw` on the stage, transformed scene by scene · checks: `prediction`, `estimate` | `l-flow` — boxes cannot show a thing filling up |
-| **A structure or artefact** — a prompt, a URL, an HTTP response, a config, a JSON payload, a file format | `l-anatomy` + `l-focus`, `l-split` to hold the whole beside the part · checks: `spot`, `classify` | `l-flow`, `l-trace` |
-| **A decision or trade-off** — REST vs GraphQL, SQL vs NoSQL, monolith vs services | `l-compare` with criteria revealed one at a time, `l-branch` for different readers, `l-contrast` · checks: `classify`, `explain`, `choose` | `l-trace`, `l-sandbox` |
-| **A quantitative relationship** — latency, cost, scaling, tokens, memory | `l-whatif inline` first (numbers inside the sentence), panel form only if they must hunt for a threshold · checks: `estimate`, `prediction` | `l-anatomy` |
-| **A piece of code** — one function, one module | `l-split` + `l-stepper` + `l-focus` + `l-trace` + `l-state`; `l-lab` when the reader should run buggy-vs-fixed variants · checks: `prediction`, `spot` | `l-flow`, `l-compare` |
-| **A whole codebase** — a repo the reader has to work in | See *Lessons about a codebase* below. `l-flow` for the module map, `l-anatomy` for a key file, `l-trace` for one real execution, `l-split` to hold code beside its explanation · checks: `prediction`, `spot`, `arrange` | a lesson that is only about process, history or tests |
-| **A system architecture** | `l-stage` + `l-flow` + `l-layer` (one question per layer), revealed through scenes · checks: `spot`, `arrange` | `l-sandbox`, `l-anatomy` |
-| **A transformation** — source→AST, spec→code, markdown→HTML | `l-transform` + `l-trace` · checks: `prediction`, `arrange` | `l-compare` |
-| **A conceptual distinction** — state vs derived, sync vs async, compile-time vs runtime | `l-compare` + `l-contrast` · checks: `classify` above all | `l-flow`, `l-sandbox` |
-| **Non-technical material** — history, rhetoric, policy, process design | `l-anatomy`, `l-compare`, `l-transform`, `l-contrast` · checks: `classify`, `explain`, `prediction` | `l-whatif`, `l-sandbox`, `l-state` — do not invent a model where there isn't one |
+| **A process or sequence** — request lifecycle, CI/CD, algorithm, protocol, agent loop | `Panels` for the walk-through, `Stage` + `Flow` where it must transform, `Trace` for one concrete run · checks: `arrange`, `prediction` | `Anatomy`, `Compare` |
+| **Something that moves, fills, drains or decays** — a buffer, a queue, a token budget, a retry storm, memory layout | a `Drawing` on a stage, transformed scene by scene · checks: `prediction`, `estimate` | `Flow` — boxes cannot show a thing filling up |
+| **A structure or artefact** — a prompt, a URL, an HTTP response, a config, a JSON payload, a file format | `Anatomy` + `Focus`, `Split` to hold the whole beside the part · checks: `spot`, `classify` | `Flow`, `Trace` |
+| **A decision or trade-off** — REST vs GraphQL, SQL vs NoSQL, monolith vs services | `Compare` with criteria revealed one at a time, `Branch` for different readers, `Contrast` · checks: `classify`, `explain`, `choose` | `Trace`, `Sandbox` |
+| **A quantitative relationship** — latency, cost, scaling, tokens, memory | inline `WhatIf` first (numbers inside the sentence), panel form only if they must hunt for a threshold · checks: `estimate`, `prediction` | `Anatomy` |
+| **A piece of code** — one function, one module | `Split` + `Stepper` + `Focus` + `Trace` + `StateBox`; `Lab` when the reader should run buggy-vs-fixed variants · checks: `prediction`, `spot` | `Flow`, `Compare` |
+| **A whole codebase** — a repo the reader has to work in | See *Lessons about a codebase* below. `Flow` for the module map, `Anatomy` for a key file, `Trace` for one real execution, `Split` to hold code beside its explanation · checks: `prediction`, `spot`, `arrange` | a lesson that is only about process, history or tests |
+| **A system architecture** | `Stage` + `Flow` + `Layers` (one question per layer), revealed through scenes · checks: `spot`, `arrange` | `Sandbox`, `Anatomy` |
+| **A transformation** — source→AST, spec→code, markdown→HTML | `Transform` + `Trace` · checks: `prediction`, `arrange` | `Compare` |
+| **A conceptual distinction** — state vs derived, sync vs async, compile-time vs runtime | `Compare` + `Contrast` · checks: `classify` above all | `Flow`, `Sandbox` |
+| **Non-technical material** — history, rhetoric, policy, process design | `Anatomy`, `Compare`, `Transform`, `Contrast` · checks: `classify`, `explain`, `prediction` | `WhatIf`, `Sandbox`, `StateBox` — do not invent a model where there isn't one |
 
-Four things are effectively always present, whatever the topic:
+These are always present, whatever the topic:
 
-- `l-section` with a real `goal` on each
+- a `Section` with a real goal for each idea, and **every section opens with a
+  big drawing** — a `Picture`, a `Story` or an `Analogy` — before any paragraph;
+- at least one `Analogy`, where the reader first meets the central concept;
+- wherever something goes somewhere (a request, a packet, a planet, money, a
+  token), a `Story` in which that one thing **travels** from scene to scene with
+  `pose`;
 - at least one `prediction` check, early — it is the strongest move in the format
-- `l-checkpoint` every three or four sections
-- `l-finish` at the end
+- a `Checkpoint` every three or four sections
+- the `Finish` at the end
 
 **Then pick a narrative mode per stretch of the lesson — there are two, and
-neither is the default.** `scroll-story` with scenes keeps one object on screen
-and transforms it; use it where something genuinely has to *change*. `l-panels`
-runs a sequence of full-width drawings, one question each, and is usually the
-better opening: it gets a picture in front of the reader immediately instead of
+neither is the default.** A `Story` with scenes keeps one object on screen and
+transforms it; use it where something genuinely has to *change*. `Panels` runs a
+sequence of full-width drawings, one question each, and is usually the better
+opening: it gets a picture in front of the reader immediately instead of
 spending three screens of scroll on the premise. A lesson can use both, and can
 use panels more than once.
 
-The failure to avoid is the one the examples used to model: wrapping the whole
-lesson in `<scroll-story>` when the scenes are three sections out of twelve. The
-progress rail works without it. Reach for a story where the transformation is,
-and nowhere else.
+The failure to avoid: wrapping the whole lesson in a `Story` when the scenes are
+three sections out of twelve. The progress rail works without it. Reach for a
+story where the transformation is, and nowhere else.
 
 Everything else has to earn its place. The test: *what would the reader fail to
 understand if this were a paragraph instead?* No answer means make it a paragraph.
+
+**Big pictures, few words.** The picture explains; the words point at it. A
+lesson should feel like a well-drawn explainer, not a textbook with
+illustrations. The default beat is a `Picture` — a large drawing and one short
+sentence — and a paragraph is what you use only when no picture can carry the
+idea. When the reader meets a concept for the first time, open with something
+they already know: an `Analogy` drawn side by side with the real thing, part by
+part. In numbers: no prose block over ~60 words, no caption over ~15, and more
+pictures than prose blocks in the lesson. This is about the channel, not the
+content — the claims stay exact, there are just fewer words around them.
 
 ### 2b. Lessons about a codebase
 
@@ -144,18 +167,18 @@ not worth the lesson.
 Cover these, in this order, before anything else earns space:
 
 - **The module map.** Which files exist, what each one owns, and which way the
-  dependencies point. `l-flow` with one node per module and edges for real imports
+  dependencies point. `Flow` with one node per module and edges for real imports
   — read them from the code, do not guess.
 - **The core data structure.** The type or object everything else passes around.
-  `l-anatomy` on its fields, one note each.
+  `Anatomy` on its fields, one note each.
 - **One real execution.** Not the architecture in the abstract: one concrete
-  journey through it, `l-trace`, with the actual function names in order.
+  journey through it, a `Trace`, with the actual function names in order.
 - **The interesting decision.** Every codebase has one or two places where it
   could have gone another way. That is where `prediction` belongs.
 
-Show real code, in `<pre><code class="lang-ts">` so it is highlighted, and quote
-it verbatim — a lesson about a codebase that paraphrases its code is a lesson
-about a codebase the reader will not recognise when they open it.
+Show real code as `Code` blocks, highlighted, and quote it verbatim — a lesson
+about a codebase that paraphrases its code is a lesson about a codebase the
+reader will not recognise when they open it.
 
 Only after that does process, history or test quality earn a section — and it
 should be framed as something about *this* code, not a general essay.
@@ -163,81 +186,87 @@ should be framed as something about *this* code, not a general essay.
 ### 3. Write the spine in prose
 
 Sections as plain sentences, in order, each with its goal and the check that ends
-it. If that list does not read like an argument, fix it now — markup will not
-rescue a bad sequence. Show it to the user if the lesson is substantial.
+it. If that list does not read like an argument, fix it now — no build will
+rescue a bad sequence.
 
-### 4. Write the body
+### 4. Write the blueprint
 
-Write **only the lesson markup** to a `*-body.html` file — the fragment that goes
-inside `<body>`. No `<html>`, no `<head>`, no `<style>`, no `<script>`: the build
-script adds the runtime.
+Turn the spine into a blueprint (`references/blueprint.md`): every section, every
+component with its inputs, every check with its prompt, answer, misses and why,
+the sources, and the ending's honest scope. Use the contract names in
+`components.md` and `checks.md` exactly — do not invent components or inputs.
+Show the blueprint to the user if the lesson is substantial.
 
-Wrap everything in `<div class="ml-shell">` and open with a hero:
-
-```html
-<div class="ml-shell">
-<header class="ml-hero">
-  <p class="ml-eyebrow">Backend fundamentals · 12 min</p>
-  <h1>Why a cache sits in front of your database</h1>
-  <p class="ml-lede">Not "because it's faster". By the end you should be able to
-  say what it is faster <em>than</em>, and what breaks when it is wrong.</p>
-</header>
-<l-section id="…" title="…" goal="…">
-  <l-panels>…beats, each one drawing…</l-panels>
-</l-section>
-<scroll-story>
-  …only the sections where one object transforms…
-</scroll-story>
-<l-finish title="…"><l-next><p>…</p></l-next></l-finish>
-</div>
-```
-
-Consult `references/primitives.md` for the markup of the primitives you chose,
-`references/visuals.md` before you draw anything, and `references/quiz-modes.md`
-for the checks. Do not guess attribute names —
-the validator will catch you, but reading is faster.
-
-Write `<l-why>` before writing the question it belongs to, and an `<l-miss>` for
-every wrong option you offer.
+Write each check's why before its question, and a miss for every wrong option.
 
 **Titles name the subject, they do not perform.** The reader picked this lesson to
-learn a specific thing; the `<h1>` and every section title should say what that
+learn a specific thing; the title and every section title should say what that
 thing is, in the words they would use. "Cartógrafo: how the game generates a
 question" is a title. "Three versions of the truth" is a headline, and it makes
-the reader work out what the section is even about. Save the writing for the prose
-— a section called `l-quiz` modes is allowed to be boring.
+the reader work out what the section is even about. Save the writing for the prose.
 
-Fenced code goes in `<pre><code class="lang-ts">` — the runtime highlights `js`
-(and `ts`/`tsx`/`jsx`), `php`, `python`, `go`, `rust`, `css`, `yaml`, `sql`, `json`,
-`html` and `bash`, and labels the block. A language with no grammar still renders,
-labelled and unhighlighted; adding one is an eight-line entry in `GRAMMARS`. Never put a `<l-region>`
-inside a highlighted block: the highlighter skips any block that already contains
-markup, so a `spot` check's code stays plain on purpose.
+### 5. Check the blueprint
 
-### 5. Build and verify
+Walk the list in `blueprint.md` → *What to check in the blueprint*. Every item is
+something that fails silently in a browser: the page still renders, it just stops
+teaching. Fix the blueprint, not the page.
 
-```bash
-python3 scripts/build_lesson.py path/to/lesson-body.html \
-  -o path/to/lesson.html --title "…" --desc "…" --lang en \
-  --source "Source title|https://example.com/source"
-```
+### 6. Build the page from the blueprint
 
-It refuses to build on broken cross-references — a `focus` target that does not
-exist, a quiz with no answer, a `l-out` using an undeclared variable — because
-those fail silently in a browser: the page still renders, it just stops teaching.
-Validation is strict by default: both broken behavior and quality warnings stop
-the build. Use `--lenient` only while drafting, never for the delivered file.
-Every shipped lesson needs at least one `--source`. For a source-less topic use a
-truthful label such as `--source "General knowledge; no primary source supplied"`.
+Write one self-contained HTML file. Implement:
+
+- `assets/lesson-core.js`, inlined unchanged, for expressions and scoring;
+- the envelope and chrome in `runtime.md` — security policy, inlined favicon,
+  progress indicator, score display, scoring, ending, sources, signature, chrome
+  text for the lesson language;
+- the look, which is entirely yours — colour only has to carry the meanings in
+  `runtime.md` → *Look and feel*;
+- the `Hero`, then each section and block in blueprint order, each component
+  exactly as its contract in `components.md` / `checks.md` says.
+  Where a contract points to `assets/skeletons/`, start from that structure and
+  keep its mechanics;
+- every block whose payload is a drawing — stages, pictures, panels, both
+  halves of an analogy — edge to edge, out of the prose column, each marked `data-wide`,
+  with the layout check from `assets/skeletons/wide.html` kept in the page.
+
+Build only the components the blueprint uses. How you structure the code is
+yours; the behaviour, numbers and text in the contracts are not. Keep it plain:
+no frameworks, no libraries, no network.
+
+### 7. Verify
+
+Check the page against every **Holds** line of the components you used, then:
+
+- the security policy is present verbatim; nothing loads from the network;
+  favicon and images are data URIs; no webfonts;
+- the document language matches the lesson; every chrome string comes from that
+  language's block — none from the other — and every key the page uses is
+  actually in it (no "undefined" anywhere on the page);
+- the stylesheet opens with the controls-inherit rule from `runtime.md`, and
+  text on every button, chip and option is readable on its own surface, in
+  light and dark and in every state (see *Look and feel* in `runtime.md`);
+- at least one source is listed; the signature footer is present;
+- every check: Check stays disabled until ready, answers once, shows verdict,
+  contrast (if any), miss, why and confidence note in order; the score and the
+  ending update;
+- every effect visibly reaches its part; in a story the stage stays on screen
+  while each scene is read and every scene visibly changes it; anything that is
+  somewhere else in a later scene is drawn **once** and travels there with
+  `pose` — never drawn at every position with the focus hopping between copies; scrolling a
+  story *backwards* lands on the right scene with accumulated reveals;
+- layout, measured rather than eyeballed: the layout check logs nothing — every
+  drawing edge to edge, every other block centred in the column;
+- keyboard alone can operate every control; dark mode, reduced-motion, print and
+  phone width all hold.
 
 **Then open it and use it.** Answer a check, drag a reactive number, scroll a
 story through. If a browser tool is available, load the file and check the
 console is clean. Shipping a lesson you have not opened is how a lesson with a
 dead diagram gets shipped.
 
-### 6. Hand it over
+### 8. Hand it over
 
-Give the path, say which primitives you chose and why, and name what you left
+Give the path, say which components you chose and why, and name what you left
 out. If the user asks for it as a shareable page, publish the built HTML as an
 Artifact — it is already self-contained.
 
@@ -245,9 +274,9 @@ Artifact — it is already self-contained.
 
 ## Non-negotiables
 
-**A wrong answer must teach.** Every check gets an `<l-why>`. Every plausible
-wrong option gets an `<l-miss>` naming the belief behind it. "Incorrect" on its
-own spends the reader's attention and returns nothing.
+**A wrong answer must teach.** Every check gets a why. Every plausible wrong
+option gets a miss naming the belief behind it. "Incorrect" on its own spends the
+reader's attention and returns nothing.
 
 **Build from the source, not from memory.** Read the actual material and verify
 the specific claims you are about to teach — dates, numbers, causal order, and
@@ -260,57 +289,46 @@ go further.
 **Prediction before explanation.** Once the reader has read the answer, asking
 them to predict it is theatre. Put the check before the reveal, always.
 
-**Never fabricate a model.** A `l-whatif` formula must be defensible. A reader
+**Never fabricate a model.** A `WhatIf` formula must be defensible. A reader
 who discovers a relationship from a slider believes it far more strongly than
 anything you wrote in a paragraph, so an invented formula teaches a falsehood
-efficiently. If you cannot defend the numbers, use `l-compare` instead.
+efficiently. If you cannot defend the numbers, use `Compare` instead.
 
 **Points are a mirror, not the point.** The scoring rewards committing to an
 answer, being calibrated about confidence, and touching the model — never
 clicking around. A run resets on reload; only the reader's personal best is kept,
-in `localStorage`, so re-opening the file offers a score to race. If the lesson
-would be worse with the HUD removed, fix the lesson. Explorable explanations are
-normally defined *against* gamification;
-this runtime keeps a light layer only because it makes the confident-and-wrong
-case visible, which is the single most useful thing a check can surface.
+so re-opening the file offers a score to race. If the lesson would be worse with
+the score removed, fix the lesson. Explorable explanations are normally defined
+*against* gamification; this layer exists only because it makes the
+confident-and-wrong case visible, which is the single most useful thing a check
+can surface.
 
 **Resolve language deliberately.** An explicit language requested by the user
 wins; otherwise use the language of the user's request, then the source's
-language. Pass `--lang` so `<html lang>` is right.
+language. Set the document language to match.
 
-The runtime's own chrome ships in English and Spanish. Every string lives in one
-`STRINGS` table at the top of `assets/runtime.js`; before building another
-language, add and verify a complete block and extend the builder's supported
-language set. Never ship a mixed-language fallback.
+Every chrome text comes from `references/strings.yaml`, by key, in the lesson
+language. If that language has no block yet, write a complete one with every key
+and add it there before building. Never ship a mixed-language page.
 
-**Honest scope.** Say what the lesson does not cover, in `<l-next>` and to the
-user. A lesson that pretends to be complete is worse than a short one that knows
-it is short.
+**Honest scope.** Say what the lesson does not cover, in the ending's `next` and
+to the user. A lesson that pretends to be complete is worse than a short one that
+knows it is short.
 
 ---
 
 ## Notes
 
-- **Do not add webfonts.** The runtime uses a system-font stack that lands on a
-  real face per platform (Avenir Next, Segoe UI Variable, Ubuntu, Roboto) and
-  never bottoms out on Arial. A Google Fonts link would break the one promise
+- **No webfonts.** Pick from fonts installed on the reader's system. A font link
+  would break the one promise
   this format makes — that the file works offline, from a USB stick, forever.
-  Restyling belongs in `assets/runtime.css` tokens, not in a lesson body.
-- **Favicon and signature are automatic.** `build_lesson.py` inlines
-  `assets/favicon.svg` as a data URI and appends the "Created with 🧡 by
-  webreactiva.com" footer to every lesson. Do not hand-write either into a
-  lesson body, and do not link the mark as a file — inlining is what keeps the
-  page self-contained. `assets/logo.svg` is the same mark at full size for use
-  outside a lesson.
-- `l-sandbox` is blocked by browsers on `file://`. Serve over HTTP
-  (`python3 -m http.server`) to demo it, or leave it out for a file people will
-  open locally. For fixed author-written variants (buggy vs fixed, strategy A vs
-  B), `l-lab` runs in an isolated Worker and works everywhere — prefer it unless
-  the reader must edit the code.
-- `l-lab` executes each fixed variant in a disposable Web Worker with a two-second
-  timeout; it cannot touch the lesson DOM. The generated page also blocks network
-  connections with CSP. Do not weaken either boundary to make an example easier.
-- The page is theme-aware and prints cleanly; the HUD and progress rail are
-  hidden in print.
-- To re-check an existing lesson body without rebuilding:
-  `python3 scripts/build_lesson.py body.html --check-only`
+- **Favicon and signature in every lesson**, exactly as `runtime.md` specifies.
+  Inline the mark; never link it as a file.
+- `Sandbox` is blocked by browsers on `file://`. Leave it out of a file people
+  will open locally, or say it must be served over HTTP. For fixed author-written
+  variants (buggy vs fixed, strategy A vs B), `Lab` runs in an isolated worker and
+  works everywhere — prefer it unless the reader must edit the code.
+- `Lab` and `Sandbox` isolation and the security policy are boundaries. Do not
+  weaken either to make an example easier.
+- To change an existing lesson, update its blueprint first, re-check it, then
+  change the page.

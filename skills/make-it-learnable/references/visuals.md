@@ -1,12 +1,12 @@
 # Drawing the thing
 
-`l-flow`, `l-anatomy`, `l-compare` and `l-state` are furniture. They are
+`Flow`, `Anatomy`, `Compare` and `StateBox` are furniture. They are
 excellent when the idea really is boxes, parts, columns or fields, and they cost
 you nothing to place. But a vocabulary of widgets has a gravity: every lesson
 about a process comes out as the same three grey boxes on a grid, and a reader
 who has seen two of these lessons can predict the third before scrolling.
 
-`l-draw` is the escape. Use it when the shape of the idea is not the shape of any
+A `Drawing` is the escape. Use it when the shape of the idea is not the shape of any
 widget — and that is more often than the widgets make it look.
 
 ## When a drawing earns its place
@@ -17,11 +17,11 @@ a queue drains, a signal decays, memory is laid out contiguously, one thing
 nests inside another, a boundary is crossed.
 
 Keep the widget when the meaning is a **list of named things**: modules and their
-imports, the fields of a struct, four options across five criteria. `l-flow` will
+imports, the fields of a struct, four options across five criteria. `Flow` will
 route those arrows better than you will, and it stays correct when the wording
 changes.
 
-The honest test, before you open the `<svg>`: *say out loud what the picture
+The honest test, before you start drawing: *say out loud what the picture
 shows.* If the sentence is "the parts of X" or "A calls B calls C", there is a
 primitive for that. If it is "the buffer fills from the left while the reader
 drains it from the right", draw it.
@@ -34,8 +34,9 @@ runtime exists.
 
 So: build the drawing to be transformed. Before drawing anything, write the beats
 you need on the stage: *empty → first write → cache hit → eviction → cold again*.
-Then draw the union of those states, mark the elements with `data-part` and
-`data-when`, and let the scenes reveal them. A drawing that never changes is a
+Then draw the union of those states, mark the elements as named parts and
+`when:` states in the blueprint — and anything that moves as one part with
+`poses` and a `path`, so the scenes move it instead of swapping copies. A drawing that never changes is a
 picture, and a picture belongs in the prose, not on a sticky stage.
 
 ## Draw the mechanism, not the org chart
@@ -67,19 +68,20 @@ about a second to be understood.
 - Labels go **inside the drawing**, next to what they name. A legend is a
   join the reader has to perform, and they will not.
 - Four to seven labelled elements. Past that, split it into scenes and reveal.
-- Text in an SVG at `13px` on a stage that scales — that is what `ml-label` is.
-  Anything smaller is decoration you should delete.
+- Labels big enough to read at the size the drawing actually renders, phone
+  included. Anything smaller is decoration you should delete.
 - No sentences in the drawing. The sentences are already right there in the
   prose, in a font that reflows.
 
 This is not the same as talking to a five-year-old. The audience is an adult who
 knows other things and does not yet know this thing. Big shapes and few words are
-about the *channel* — a glanceable stage beside dense prose — not about dumbing
-the content down. The prose stays exact; the drawing stays legible.
+about the *channel* — the picture does the explaining and the prose only points
+at it — not about dumbing the content down. The words stay exact and few; the
+drawing stays big and legible.
 
 ## Drawing a sequence of panels
 
-`l-panels` puts the drawing in charge for a stretch of the lesson. Four rules
+`Panels` puts the drawing in charge for a stretch of the lesson. Four rules
 make that work, and they are all observable in explainers that succeed at it.
 
 **The title is a sentence, not a topic.** "Ahora sois mil." — not "Concurrencia".
@@ -111,31 +113,24 @@ that the six steps cost the same whether or not that is true, and the claim is
 in the coordinates where no reviewer will look for it. Panels earn their place
 in a lesson precisely because a check comes afterwards.
 
-## Palette and theme
+## Colour in a drawing
 
-Use the helper classes (`ml-fill`, `ml-stroke`, `ml-label`, `ml-accent`,
-`ml-accent-2`, `ml-muted`, `ml-ok`, `ml-bad`). They ride on `color`, so the whole
-drawing flips correctly in dark mode and prints without turning to mud. A
-hard-coded hex is a drawing that only works in one theme.
-
-Colour is a signal, not a mood. In one drawing that means at most: the default
-ink, one accent for the thing under discussion, and a muted tone for context.
-`ml-ok`/`ml-bad` mean *this succeeded / this failed* and never "green looks
-nice here". Tint with `fill-opacity`, never with a second colour.
-
-And skip the things that make an SVG look like clipart: drop shadows, decorative
-gradients, 3D perspective, rounded cartoon characters, an icon for every noun.
+A drawing uses the same colour meanings as the rest of the page (`runtime.md` →
+*Look and feel*), in both themes. Colour in a drawing is a signal: the right and
+wrong meanings say *this succeeded / this failed*, and the thing under discussion
+stands apart from the context. How it looks is yours.
 
 ## Accessibility and the file
 
-`role="img"` and an `aria-label` on every `<svg>` saying what it shows — one
-sentence, the same one you said out loud in the test above. `viewBox` and no
-`width`/`height`. No external images, no fonts, no `<foreignObject>`: the lesson
-is one file that has to work from a USB stick in ten years.
+Every drawing is exposed to assistive tech as a single image whose name is one
+sentence saying what it shows — the same one you said out loud in the test
+above. It scales from its coordinate box, with no fixed pixel size. No external
+images, no fonts, no embedded foreign documents: the lesson is one file that has
+to work from a USB stick in ten years.
 
 ## The test that catches the generic drawing
 
 Cover the labels. If the drawing could belong to any other lesson on the same
-*kind* of subject, you have drawn a widget by hand and paid the SVG price for
+*kind* of subject, you have drawn a widget by hand and paid the drawing price for
 nothing. Every lesson should have at least one drawing that only this subject
 could have produced.
